@@ -1,8 +1,12 @@
+'use client'
 import React from 'react';
 import styles from './selectmode.module.css';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
-export default function selectmodepage() {
+export default function Page() {
+  const router = useRouter();
+
   return (
     <div className={styles.imageContainer}>
       <div className={styles.backgroundImage}>
@@ -17,7 +21,7 @@ export default function selectmodepage() {
 
       <div className={styles.buttonWrapper}>
         <div className={styles.buttonWithText}>
-          <button className={styles.button}>
+          <button className={styles.button} onClick={() => router.push('/selectminion')}>
             <Image
               src="/image/button/1VS1.png"
               alt="1VS1 button"

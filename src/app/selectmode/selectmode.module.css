@@ -38,4 +38,10 @@
   width: 314px; /* Match the image width */
   height: 314px; /* Match the image height */
   padding: 0; /* Remove default padding */
+  transition: transform 0.2s ease-in-out;
+}
+
+.button:hover {
+  transform: scale(1.1); /* Slight zoom effect on hover */
+
 }
