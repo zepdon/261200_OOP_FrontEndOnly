@@ -26,7 +26,7 @@ export default function Startpage() {
         />
       </div>
       <div className={styles.buttonContainer}>
-        <button className={styles.button}>
+        <button className={styles.button} onClick={() => router.push('/selectmode')}>
           <Image 
             src="/image/button/PLAY.png"
             alt="PLAY button"

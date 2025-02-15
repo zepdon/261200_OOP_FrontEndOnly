@@ -1,0 +1,41 @@
+.imageContainer {
+  position: relative;
+  width: 100%;
+  height: 100vh; /* Full viewport height */
+}
+
+.backgroundImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Ensure the background is behind the buttons */
+}
+
+.buttonWrapper {
+  position: absolute;
+  top: 60%; /* Center vertically */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, -50%); /* Adjust for exact centering */
+  z-index: 2; /* Ensure buttons are above the background */
+  display: flex;
+  flex-direction: row; /* Arrange buttons horizontally */
+  gap: 40px; /* Space between buttons */
+}
+
+.buttonWithText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px; /* Space between button and text image */
+}
+
+.button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 314px; /* Match the image width */
+  height: 314px; /* Match the image height */
+  padding: 0; /* Remove default padding */
+}
