@@ -1,8 +1,11 @@
-import React from 'react';
-import  styles  from './Tutorialpage.module.css'; // Import the CSS file
+"use client";
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import styles from './Tutorialpage.module.css';
 
-export default function Tutorialpage() {
+export default function TutorialPage() {
+  const router = useRouter(); // Use Next.js router for navigation
+
   return (
     <div className={styles.imageContainer}>
       <div className={styles.backgroundImage}>
@@ -13,22 +16,18 @@ export default function Tutorialpage() {
           height={1024}
           layout="responsive"
         />
+      </div>
 
-        <div  className={styles.buttonContainer}>
-          <div style={{justifyContent: "center"}}>
-        <button className={styles.button}>
+      <div className={styles.buttonContainer}>
+        <button className={styles.button} onClick={() => router.push('/')}>
           <Image 
             src="/image/button/Back to Start.png"
-            alt="PLAY button"
-            width={600}  // Increased width
-            height={240} // Increased height
+            alt="BACK TO START button"
+            width={350}  
+            height={120} 
           />
         </button>
-        </div>
       </div>
-      </div>
-      
-      
     </div>
   );
 }
