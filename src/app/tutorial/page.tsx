@@ -27,8 +27,6 @@ export default function Tutorialpage() {
         </div>
       </div>
       </div>
-      
-      
     </div>
   );
 }

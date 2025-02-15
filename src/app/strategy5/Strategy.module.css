@@ -1,0 +1,106 @@
+.container {
+    position: relative; /* Required for absolute positioning of child elements */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    background-color: #000523; /* Background color */
+    height: 100vh; /* Height */
+  }
+  
+  .imageAndInputContainer {
+    position: absolute; /* Position the container absolutely */
+    top: 70px; /* Y position */
+    left: 150px; /* X position */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px; /* Space between image and input */
+  }
+  
+  .inputContainer input {
+    width: 290px; /* Match the width of the image */
+    padding: 10px; /* Add some padding */
+    font-size: 16px; /* Adjust font size */
+    border: 2px solid #ccc; /* Add a border */
+    border-radius: 5px; /* Rounded corners */
+    background-color: #fff; /* White background */
+    color: #000; /* Text color */
+  }
+  
+  .strategyAndInputContainer {
+    position: absolute; /* Position the container absolutely */
+    top: 60px; /* Y position */
+    left: 700px; /* X position */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px; /* Space between image and input */
+  }
+  
+  .strategyInputContainer {
+    width: 100%; /* Ensure the container takes full width */
+    border: 1px ; /* Debugging: Check the container width */
+  }
+  
+  .strategyInputContainer textarea {
+    width: 724px; /* Match the width of the image */
+    height: 400px; /* Set the initial height of the textarea */
+    padding: 10px; /* Add some padding */
+    font-size: 16px; /* Adjust font size */
+    border: 2px solid #ccc; /* Add a border */
+    border-radius: 5px; /* Rounded corners */
+    background-color: #fff; /* White background */
+    color: #000; /* Text color */
+    resize: vertical; /* Allow vertical resizing */
+    box-sizing: border-box; /* Include padding and border in the width */
+  }
+  .parentContainer {
+    position: relative; /* Make this the positioning context */
+  }
+  
+  .minionContainer {
+    position: absolute; /* Enable positioning */
+    top: -200px; /* Y position */
+    left: -664px; /* X position */
+  }
+  .defImageAndInputContainer {
+    display: flex; /* Align the image and input horizontally */
+    align-items: center; /* Vertically align the items */
+    position: absolute;
+    top: 610px; /* Adjust the Y position as needed */
+    left: 680px; /* Adjust the X position as needed */
+  }
+  
+  .defImageContainer {
+    margin-right: 20px; /* Space between image and input */
+  }
+  
+  .defInputContainer input {
+    width: 250px; /* Adjust the width of the input field */
+    padding: 10px;
+    font-size: 16px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    color: #000;
+  }
+  .newImageButton {
+    background: none; /* No background color */
+    border: none; /* Remove default button border */
+    padding: 0; /* Remove padding */
+    cursor: pointer; /* Pointer cursor when hovering */
+    display: flex;
+    align-items: center;
+    position: absolute; /* Absolute positioning */
+    top: 600px; /* Adjust the vertical position */
+    left: 1300px; /* Adjust the horizontal position */
+    z-index: 10; /* Bring it to the front if needed */
+  }
+  
+  .newImageContainer {
+    margin-right: 20px; /* Optional: Space between the new button and other elements */
+  }
+  
+
+

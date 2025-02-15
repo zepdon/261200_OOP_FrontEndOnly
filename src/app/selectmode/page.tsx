@@ -2,7 +2,7 @@ import React from 'react';
 import styles from './selectmode.module.css';
 import Image from 'next/image';
 
-export default function Page() {
+export default function selectmodepage() {
   return (
     <div className={styles.imageContainer}>
       <div className={styles.backgroundImage}>
