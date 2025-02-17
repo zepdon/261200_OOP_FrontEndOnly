@@ -1,0 +1,56 @@
+.container {
+  text-align: center;
+  background-color: #0b0d23;
+  color: white;
+  font-family: "Georgia", serif;
+  height: 100vh;
+}
+
+/* Title */
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+/* Grid ใช้ Flexbox แทน */
+.grid {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0px; /* ลดระยะห่างระหว่างคอลัมน์ */
+  flex-wrap: wrap;
+}
+
+/* Column */
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Hexagon Shape */
+.hex {
+  width: 69px;
+  height: 60px;
+  background-color: white;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  transition: background-color 0.3s;
+  cursor: pointer;
+}
+
+/* สีของ Hexagon */
+.white {
+  background-color: white;
+}
+.blue {
+  background-color: #3498db;
+}
+.red {
+  background-color: #e74c3c;
+}
+
+/* ทำให้ Columns สลับตำแหน่งกัน */
+.column:nth-child(odd) {
+  margin-top: 30px; /* ลดระยะห่างระหว่างคอลัมน์ที่สลับตำแหน่ง */
+}
