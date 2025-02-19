@@ -4,38 +4,31 @@
   color: white;
   font-family: "Georgia", serif;
   height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.svgContainer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Title */
 .title {
   font-size: 2rem;
   font-weight: bold;
-  margin-bottom: 10px;
+  margin-bottom: 0px;
 }
 
-/* Grid ใช้ Flexbox แทน */
-.grid {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 0px; /* ลดระยะห่างระหว่างคอลัมน์ */
-  flex-wrap: wrap;
-}
 
-/* Column */
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* Hexagon Shape */
 .hex {
-  width: 69px;
-  height: 60px;
-  background-color: white;
-  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-  transition: background-color 0.3s;
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 2;
+  transition: fill 0.3s ease-in-out;
   cursor: pointer;
 }
 
@@ -50,7 +43,29 @@
   background-color: #e74c3c;
 }
 
-/* ทำให้ Columns สลับตำแหน่งกัน */
-.column:nth-child(odd) {
-  margin-top: 30px; /* ลดระยะห่างระหว่างคอลัมน์ที่สลับตำแหน่ง */
+.yellow {
+  fill: #f4d03f;
 }
+
+.button {
+  background-color: white;
+  color: black;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out, background-color 0.2s ease;
+}
+
+.buttonContainer {
+  position: absolute; /* Position it relative to the background */
+  top: 30%;
+  left: 10%;
+  transform: translate(-50%, -50%); /* Perfect centering */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
