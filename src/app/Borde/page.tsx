@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import React , { useState } from "react";
 import HexGrid from "./HexGrid"; // ตรวจสอบ path ให้ถูกต้อง
 import styles from "./Hex.module.css";
 import BuyHexCard from "@components/BuyHexCardProps";

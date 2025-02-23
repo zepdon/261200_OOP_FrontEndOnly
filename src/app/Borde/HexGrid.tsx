@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import BuyButton from "@components/BuyButton";
 
 const HEX_RADIUS = 40;
@@ -37,10 +37,20 @@ const HexGrid: React.FC<HexGridProps> = ({
       : [[-1, 0], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
   };
 
-  const highlightAvailableMoves = (turn: "blue" | "red") => {
+  // Initialize board with starting hexes.
+  useEffect(() => {
+    const initialBlue: Record<string, string> = {};
+    initialBlueHexes.forEach(key => { initialBlue[key] = "#3498db"; });
+    const initialRed: Record<string, string> = {};
+    initialRedHexes.forEach(key => { initialRed[key] = "#e74c3c"; });
+    setSelectedHexes({ ...initialBlue, ...initialRed });
+  }, [initialBlueHexes, initialRedHexes]);
+
+  // Compute highlighted hexes using useMemo so it recalculates only when selectedHexes or currentTurn change.
+  const computedHighlightedHexes = useMemo(() => {
     const adjacent: Record<string, string> = {};
     Object.keys(selectedHexes).forEach(hex => {
-      if (selectedHexes[hex] === getColor(turn)) {
+      if (selectedHexes[hex] === getColor(currentTurn)) {
         const match = hex.match(/\((\d+),(\d+)\)/);
         if (match) {
           const row = parseInt(match[1], 10);
@@ -54,42 +64,53 @@ const HexGrid: React.FC<HexGridProps> = ({
               adjCol > 0 && adjCol <= COLS &&
               !(adjKey in selectedHexes)
             ) {
-              adjacent[adjKey] = "#F4D03F"; // Highlight in yellow
+              adjacent[adjKey] = "#F4D03F"; // Highlight available move in yellow
             }
           });
         }
       }
     });
-    setHighlightedHexes(adjacent); // Update highlighted hexes
-  };
+    return adjacent;
+  }, [selectedHexes, currentTurn]);
 
+  // Update state only when computedHighlightedHexes changes.
   useEffect(() => {
-    const initialBlue: Record<string, string> = Object.create(null);
-    initialBlueHexes.forEach(key => (initialBlue[key] = "#3498db"));
-    const initialRed: Record<string, string> = Object.create(null);
-    initialRedHexes.forEach(key => (initialRed[key] = "#e74c3c"));
-    setSelectedHexes({ ...initialBlue, ...initialRed });
-  }, []);
-
-  useEffect(() => {
-    highlightAvailableMoves(currentTurn); // Update highlighted hexes whenever the turn changes
-  }, [selectedHexes, currentTurn]); // Re-run when selectedHexes or currentTurn changes
+    setHighlightedHexes(computedHighlightedHexes);
+  }, [computedHighlightedHexes]);
 
   const handleHexClick = (row: number, col: number) => {
     const key = `(${row},${col})`;
-    if (!canAct || locked || !(key in highlightedHexes)) return; // Ensure hex is highlighted and clickable
-    setPendingHex(key); // Set the hex to be bought
+    if (!canAct || locked || !(key in highlightedHexes)) return;
+    setPendingHex(key);
   };
 
-  const handleBuy = () => {
+  const handleBuy = async () => {
     if (pendingHex) {
       setSelectedHexes(prev => ({
         ...prev,
-        [pendingHex]: getColor(currentTurn), // Mark the hex with the current player's color
+        [pendingHex]: getColor(currentTurn),
       }));
-      setCurrentTurn(prev => (prev === "blue" ? "red" : "blue")); // Switch turn
-      setLocked(true); // Lock the game until the next move
-      setPendingHex(null); // Reset the pending hex
+      setCurrentTurn(prev => (prev === "blue" ? "red" : "blue"));
+      setLocked(true);
+      const hexKey = pendingHex;
+      setPendingHex(null);
+      const matches = hexKey.match(/\((\d+),(\d+)\)/);
+      if (matches) {
+        const row = parseInt(matches[1], 10);
+        const col = parseInt(matches[2], 10);
+        const player = currentTurn === "blue" ? "Player1" : "Player2";
+        try {
+          const response = await fetch("http://localhost:8080/api/buyHex", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ row, col, player }),
+          });
+          const data = await response.text();
+          console.log("BuyHex response:", data);
+        } catch (error) {
+          console.error("Error sending buy hex request:", error);
+        }
+      }
     }
   };
 
@@ -100,11 +121,10 @@ const HexGrid: React.FC<HexGridProps> = ({
       const y = (row - 1) * HEX_HEIGHT + (col % 2 === 1 ? HEX_HEIGHT / 2 : 0);
       const key = `(${row},${col})`;
       const fillColor = selectedHexes[key] || highlightedHexes[key] || "none";
-
       hexagons.push(
         <g key={key} transform={`translate(${x},${y})`}>
           <polygon
-            points={` 
+            points={`
               ${HEX_RADIUS * 0.5},0 
               ${HEX_RADIUS * 1.5},0 
               ${HEX_RADIUS * 2},${HEX_HEIGHT / 2} 
@@ -115,11 +135,8 @@ const HexGrid: React.FC<HexGridProps> = ({
             stroke="rgba(255, 255, 255, 0.5)"
             strokeWidth="2"
             fill={fillColor}
-            style={{
-              pointerEvents: "all",
-              cursor: key in highlightedHexes ? "pointer" : "default",
-            }}
-            onClick={() => handleHexClick(row, col)} // Handle the click event
+            style={{ pointerEvents: "all", cursor: key in highlightedHexes ? "pointer" : "default" }}
+            onClick={() => handleHexClick(row, col)}
           />
         </g>
       );
@@ -136,10 +153,9 @@ const HexGrid: React.FC<HexGridProps> = ({
       >
         {hexagons}
       </svg>
-      {pendingHex && <BuyButton onBuy={handleBuy} />} {/* Render the BuyButton */}
+      {pendingHex && <BuyButton onBuy={handleBuy} />}
     </div>
   );
 };
-
 
 export default HexGrid;
