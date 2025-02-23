@@ -1,73 +1,81 @@
-'use client'
-import React from 'react';
-import styles from './selectmode.module.css';
-import Image from 'next/image';
+'use client';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import styles from './selectmode.module.css';
+import React from 'react';
+import { useGameConfig } from '../../context/GameConfigContext';
+import { GameMode } from '../../context/GameConfigContext';
 
 export default function Page() {
   const router = useRouter();
+  const { setMode } = useGameConfig();
+
+  const handleModeSelect = (mode: GameMode) => {
+    setMode(mode);
+    router.push("/selectminion"); // Navigate to minion selection page
+  };
 
   return (
     <div className={styles.imageContainer}>
+      {/* Background image */}
       <div className={styles.backgroundImage}>
         <Image
           src="/image/background/ModePage.png"
-          alt="Descriptive text for screen readers"
+          alt="Background for mode selection"
           width={1440}
           height={1024}
           layout="responsive"
         />
       </div>
-
+      
+      {/* Buttons for selecting mode */}
       <div className={styles.buttonWrapper}>
         <div className={styles.buttonWithText}>
-          <button className={styles.button} onClick={() => router.push('/selectminion')}>
+          <button className={styles.button} onClick={() => handleModeSelect("DUEL")}>
             <Image
               src="/image/button/1VS1.png"
-              alt="1VS1 button"
+              alt="Select 1 vs 1 mode"
               width={314}
               height={314}
             />
           </button>
           <Image
-            src="/image/word/1VS1 HEX MAP.png" // Path to the word image
-            alt="1VS1 Text"
-            width={140} // Adjust width as needed
-            height={84} // Adjust height as needed
+            src="/image/word/1VS1 HEX MAP.png"
+            alt="1VS1 label"
+            width={140}
+            height={84}
           />
         </div>
-
         <div className={styles.buttonWithText}>
-          <button className={styles.button}>
+          <button className={styles.button} onClick={() => handleModeSelect("SOLITAIRE")}>
             <Image
               src="/image/button/1VSAI.png"
-              alt="1VSAI button"
+              alt="Select 1 vs AI mode"
               width={314}
               height={314}
             />
           </button>
           <Image
-            src="/image/word/1VSAI HEX MAP.png" // Path to the word image
-            alt="1VS AI Text"
-            width={140} // Adjust width as needed
-            height={84} // Adjust height as needed
+            src="/image/word/1VSAI HEX MAP.png"
+            alt="1VS AI label"
+            width={140}
+            height={84}
           />
         </div>
-
         <div className={styles.buttonWithText}>
-          <button className={styles.button}>
+          <button className={styles.button} onClick={() => handleModeSelect("AUTO")}>
             <Image
               src="/image/button/AIVSAi.png"
-              alt="AIVSAI button"
+              alt="Select AI vs AI mode"
               width={314}
               height={314}
             />
           </button>
           <Image
-            src="/image/word/AI VS AI HEX MAP.png" // Path to the word image
-            alt="AI VS AI Text"
-            width={160} // Adjust width as needed
-            height={84} // Adjust height as needed
+            src="/image/word/AI VS AI HEX MAP.png"
+            alt="AI vs AI label"
+            width={160}
+            height={84}
           />
         </div>
       </div>
