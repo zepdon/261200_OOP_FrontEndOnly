@@ -15,6 +15,8 @@ interface HexGridProps {
   initialRedHexes?: string[];
   selectedMinion: null | { id: number; name: string; src: string };
   onPlaceMinion: (hexKey: string) => void;
+  gold: number; // เพิ่ม gold ใน props
+  setGold: React.Dispatch<React.SetStateAction<number>>; // เพิ่ม setGold ใน props
 }
 
 const HexGrid: React.FC<HexGridProps> = ({
@@ -24,51 +26,69 @@ const HexGrid: React.FC<HexGridProps> = ({
   initialBlueHexes = ["(1,1)", "(1,2)", "(2,1)", "(2,2)", "(1,3)"],
   initialRedHexes = ["(7,7)", "(7,8)", "(8,6)", "(8,7)", "(8,8)"],
   selectedMinion,
+  gold, // รับ gold จาก props
+  setGold, // รับ setGold จาก props
   onPlaceMinion
 }) => {
   const [selectedHexes, setSelectedHexes] = useState<Record<string, string>>({});
-  const [minionPositions, setMinionPositions] = useState<Record<string, { id: number; src: string; owner: "blue" | "red" }>>({});  
+  const [minionPositions, setMinionPositions] = useState<Record<string, { id: number; src: string; owner: "blue" | "red"; atk: number; def: number ;hp: number}>>({});
   const [pendingHex, setPendingHex] = useState<string | null>(null);
   const [currentTurn, setCurrentTurn] = useState<"blue" | "red">("blue");
   const [turnCount, setTurnCount] = useState(1);
   const [highlightedHexes, setHighlightedHexes] = useState<Record<string, string>>({});
+  const [hasPlacedMinion, setHasPlacedMinion] = useState(false);
+  const [isBuyingHex, setIsBuyingHex] = useState(false);
+  const [hasBoughtHex, setHasBoughtHex] = useState(false);
+  const [selectedMinionInfo, setSelectedMinionInfo] = useState<{ id: number; owner: "blue" | "red"; atk: number; def: number ; hp: number} | null>(null);
 
   const getColor = (turn: "blue" | "red") => (turn === "blue" ? "#3498db" : "#e74c3c");
 
   const getValidDirections = (row: number, col: number): [number, number][] => {
     const isEvenRow = row % 2 === 0;
     return isEvenRow
-      ? [[-1, 0], [-1, 1], [0, 1], [1, 0], [0, -1], [-1, -1]]
-      : [[-1, 0], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+      ? [[-1, 0], [-1, 1], [0, 1], [1, 0], [0, -1], [-1, -1]] // แถวคู่
+      : [[-1, 0], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]]; // แถวคี่
   };
 
   const highlightAvailableMoves = (turn: "blue" | "red") => {
-    if (turnCount < 3 || pendingHex) {
+    if (!isBuyingHex) {
       setHighlightedHexes({});
       return;
     }
+  
     const adjacent: Record<string, string> = {};
-    Object.keys(selectedHexes).forEach(hex => {
-      if (selectedHexes[hex] === getColor(turn)) {
-        const match = hex.match(/\((\d+),(\d+)\)/);
-        if (match) {
-          const row = parseInt(match[1], 10);
-          const col = parseInt(match[2], 10);
-          getValidDirections(row, col).forEach(([dr, dc]) => {
-            const adjRow = row + dr;
-            const adjCol = col + dc;
-            const adjKey = `(${adjRow},${adjCol})`;
-            if (
-              adjRow > 0 && adjRow <= ROWS &&
-              adjCol > 0 && adjCol <= COLS &&
-              !(adjKey in selectedHexes) && !(adjKey in highlightedHexes)
-            ) {
-              adjacent[adjKey] = "#F4D03F";
-            }
-          });
+  
+    // ฟังก์ชันตรวจสอบว่าเซลล์ที่อยู่ติดกันเป็นของฝั่งตัวเองหรือไม่
+    const isAdjacentToOwnHex = (row: number, col: number): boolean => {
+      const directions = getValidDirections(row, col);
+      for (const [dr, dc] of directions) {
+        const adjRow = row + dr;
+        const adjCol = col + dc;
+        if (adjRow > 0 && adjRow <= ROWS && adjCol > 0 && adjCol <= COLS) {
+          const adjKey = `(${adjRow},${adjCol})`;
+          if (selectedHexes[adjKey] === getColor(turn)) {
+            return true; // เซลล์นี้อยู่ติดกับเซลล์ของฝั่งตัวเอง
+          }
         }
       }
-    });
+      return false; // ไม่มีเซลล์ของฝั่งตัวเองติดกัน
+    };
+  
+    // วนลูปผ่านทุกเซลล์ในเกม
+    for (let row = 1; row <= ROWS; row++) {
+      for (let col = 1; col <= COLS; col++) {
+        const key = `(${row},${col})`;
+  
+        // ตรวจสอบว่าเซลล์นี้ยังไม่ถูกเลือก และอยู่ติดกับเซลล์ของฝั่งตัวเอง
+        if (
+          !(key in selectedHexes) && // เซลล์นี้ยังไม่ถูกเลือก
+          isAdjacentToOwnHex(row, col) // เซลล์นี้อยู่ติดกับเซลล์ของฝั่งตัวเอง
+        ) {
+          adjacent[key] = "#F4D03F"; // สีเหลือง
+        }
+      }
+    }
+  
     setHighlightedHexes(adjacent);
   };
 
@@ -82,29 +102,55 @@ const HexGrid: React.FC<HexGridProps> = ({
 
   useEffect(() => {
     highlightAvailableMoves(currentTurn);
-  }, [selectedHexes, currentTurn]);
+  }, [selectedHexes, currentTurn, isBuyingHex]);
 
   const handleHexClick = (row: number, col: number) => {
-    if (!canAct || locked) return; 
+    if (!canAct || locked) return;
     const key = `(${row},${col})`;
+  
+    if (isBuyingHex) {
+      if (key in highlightedHexes) {
+        if (gold >= 1000) { // ตรวจสอบว่ามีเงินเพียงพอหรือไม่
+          setSelectedHexes(prev => ({
+            ...prev,
+            [key]: getColor(currentTurn),
+          }));
+          setIsBuyingHex(false);
+          setHasBoughtHex(true);
+          setHighlightedHexes({});
+          setGold(prevGold => prevGold - 500); // หักเงิน
+        } else {
+          alert("คุณมีเงินไม่เพียงพอ!");
+        }
+      }
+      return;
+    }
   
     const isPlayerHex = selectedHexes[key] === getColor(currentTurn);
   
     if (selectedMinion && isPlayerHex) {
+      if (hasPlacedMinion) {
+        alert("คุณสามารถลงมินเนียนได้เพียง 1 ตัวต่อเทิร์น!");
+        return;
+      }
+      const newMinion = { 
+        ...selectedMinion, 
+        owner: currentTurn, 
+        atk: 5, 
+        def: 5, 
+        hp: 100
+      };
       setMinionPositions(prev => ({
         ...prev,
-        [key]: { ...selectedMinion, owner: currentTurn },
+        [key]: newMinion,
       }));
       onPlaceMinion(key);
+      setHasPlacedMinion(true);
       return;
     }
-      if (key in highlightedHexes) {
-      setSelectedHexes(prev => ({
-        ...prev,
-        [key]: getColor(currentTurn),
-      }));
-      setPendingHex(key);
-      setLocked(true);
+  
+    if (minionPositions[key]) {
+      setSelectedMinionInfo(minionPositions[key]);
     }
   };
 
@@ -112,8 +158,15 @@ const HexGrid: React.FC<HexGridProps> = ({
     setCurrentTurn(prev => (prev === "blue" ? "red" : "blue"));
     setTurnCount(prev => prev + 1);
     setLocked(false);
-    setPendingHex(null);  // รีเซ็ต pendingHex เมื่อจบตา
-    highlightAvailableMoves(currentTurn);  // คำนวณช่องที่สามารถคลิกได้ใหม่
+    setPendingHex(null);
+    setHasPlacedMinion(false);
+    setHasBoughtHex(false);
+    highlightAvailableMoves(currentTurn);
+  };
+
+  // ฟังก์ชันสำหรับปิดแถบสถานะ
+  const handleCloseStatus = () => {
+    setSelectedMinionInfo(null);
   };
 
   const hexagons: React.ReactElement[] = [];
@@ -123,7 +176,7 @@ const HexGrid: React.FC<HexGridProps> = ({
       const y = (row - 1) * HEX_HEIGHT + (col % 2 === 1 ? HEX_HEIGHT / 2 : 0);
       const key = `(${row},${col})`;
       const fillColor = selectedHexes[key] || highlightedHexes[key] || "none";
-      const minion = minionPositions[key]; // ตรวจสอบว่ามีมินเนียนในช่องนี้หรือไม่
+      const minion = minionPositions[key];
 
       hexagons.push(
         <g key={key} transform={`translate(${x},${y})`}>
@@ -145,19 +198,20 @@ const HexGrid: React.FC<HexGridProps> = ({
             }}
             onClick={() => handleHexClick(row, col)}
           />
-          {minion && ( // แสดงมินเนียนถ้ามี
+          {minion && (
             <image
               href={minion.src}
               x={HEX_RADIUS * 0.1}
               y={HEX_HEIGHT * -0.2}
               width={HEX_RADIUS * 1.5}
               height={HEX_HEIGHT * 1.5}
+              onClick={() => setSelectedMinionInfo(minion)} // คลิกที่มินเนียน
             />
-        )}
-      </g>
-    );
+          )}
+        </g>
+      );
+    }
   }
-}
 
   return (
     <div style={{ position: "relative" }}>
@@ -169,6 +223,32 @@ const HexGrid: React.FC<HexGridProps> = ({
       >
         {hexagons}
       </svg>
+
+      {/* ปุ่ม Buy Hex และ Done */}
+      <button
+        style={{
+          position: "fixed",
+          top: "28%",
+          left: "6%",
+          fontSize: "1.5rem",
+          fontWeight: "bold",
+          backgroundColor: turnCount >= 3 && !hasBoughtHex ? "white" : "gray",
+          color: "black",
+          border: "none",
+          borderRadius: "8px",
+          cursor: turnCount >= 3 && !hasBoughtHex ? "pointer" : "not-allowed",
+        }}
+        onClick={() => {
+          if (turnCount >= 3) {
+            setIsBuyingHex(true);
+            highlightAvailableMoves(currentTurn);
+          }
+        }}
+        disabled={turnCount < 3 || hasBoughtHex}
+      >
+        Buy Hex
+      </button>
+
       <button
         style={{
           position: "fixed",
@@ -187,6 +267,7 @@ const HexGrid: React.FC<HexGridProps> = ({
         Done
       </button>
 
+      {/* แสดง Turn Count และ Turn */}
       <div
         style={{
           position: "fixed",
@@ -201,17 +282,58 @@ const HexGrid: React.FC<HexGridProps> = ({
       >
         Turn Count: {turnCount}
       </div>
+
       <div
-      style={{
-        position: "fixed",
-        top: "5%",
-        right: "5%",
-        padding: "10px 20px",
-        fontSize: "1.5rem",
-        backgroundColor: "#34495e",
-        color: "white",
-        borderRadius: "8px",
-      }}>{currentTurn} Turn</div>
+        style={{
+          position: "fixed",
+          top: "5%",
+          right: "5%",
+          padding: "10px 20px",
+          fontSize: "1.5rem",
+          backgroundColor: "#34495e",
+          color: "white",
+          borderRadius: "8px",
+        }}
+      >
+        {currentTurn} Turn
+      </div>
+
+      {/* แสดงสถานะของมินเนียนที่ถูกคลิก */}
+      {selectedMinionInfo && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "25%",
+            left: "5%",
+            padding: "10px 30px",
+            fontSize: "1rem",
+            backgroundColor: "#222",
+            color: "white",
+            borderRadius: "8px",
+          }}
+        >
+          <button
+            style={{
+              position: "absolute",
+              top: "5px",
+              right: "5px",
+              backgroundColor: "transparent",
+              border: "none",
+              color: "red",
+              fontSize: "1rem",
+              cursor: "pointer",
+            }}
+            onClick={handleCloseStatus}
+          >
+            X
+          </button>
+          <p style={{fontWeight: "bold"}}>Minion status</p>
+          <p>Owner: {selectedMinionInfo.owner}</p>
+          <p>HP: {selectedMinionInfo.hp}</p>
+          <p>ATK: {selectedMinionInfo.atk}</p>
+          <p>DEF: {selectedMinionInfo.def}</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -24,19 +24,22 @@ export default function BordePage() {
   const handleBuyMinion = (minionId: number) => {
   const minion = minions.find(m => m.id === minionId);
   if (minion && gold >= minion.price) {
-    setGold(prevGold => prevGold - minion.price);
     setSelectedMinion(minion); // Set the minion to be placed
     setIsPopupOpen(false); // Close the buy popup
   }
 };
 
 
-  const handlePlaceMinion = (hexKey: string) => {
-    if (selectedMinion) {
+const handlePlaceMinion = (hexKey: string) => {
+  if (selectedMinion) {
+    const minion = minions.find(m => m.id === selectedMinion.id);
+    if (minion && gold >= minion.price) {
+      setGold(prevGold => prevGold - minion.price); // หักเงินตามราคามินเนียน
       alert(`Spawned ${selectedMinion.name} at ${hexKey}`);
-      setSelectedMinion(null); // รีเซ็ตหลังจากวาง Minion
+      setSelectedMinion(null); // รีเซ็ตมินเนียนหลังจากวาง
     }
-  };
+  }
+};
 
 
   return (
@@ -81,17 +84,14 @@ export default function BordePage() {
       /><h1 style={{ color: '#f4d03f' }}>{gold}</h1>
       </div>
 
-      <div className={styles.buttonContainer}>
-      <div className={styles.button}>
-      BuyHex
-      </div>
-      </div>
       <HexGrid 
         canAct={true}
         locked={locked}
         setLocked={setLocked}
         selectedMinion={selectedMinion}
         onPlaceMinion={handlePlaceMinion}
+        gold={gold} // ส่ง gold ไปยัง HexGrid
+        setGold={setGold}
       /> 
     </div>
   );
