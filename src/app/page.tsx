@@ -9,16 +9,16 @@ export default function Startpage() {
   // Function to send a request to the backend to start the game.
   const handlePlayClick = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/startGame", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        // Send any necessary initialization data. Here we send a simple action command.
-        body: JSON.stringify({ action: "start" })
-      });
-      const data = await response.text();
-      console.log("Backend response:", data);
+      // const response = await fetch("http://localhost:8080/api/startGame", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json"
+      //   },
+      //   // Send any necessary initialization data. Here we send a simple action command.
+      //   body: JSON.stringify({ action: "start" })
+      // });
+      // const data = await response.text();
+      // console.log("Backend response:", data);
       // After a successful response, navigate to the mode selection page.
       router.push('/selectmode');
     } catch (error) {

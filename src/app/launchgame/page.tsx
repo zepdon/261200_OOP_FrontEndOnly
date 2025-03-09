@@ -21,7 +21,7 @@ export default function LaunchGamePage() {
       const data = await response.text();
       console.log("Game launch response:", data);
       // Navigate to the game board or a waiting page.
-      router.push("/Borde");
+      router.push("/Board");
     } catch (error) {
       console.error("Error launching game:", error);
     }

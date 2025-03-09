@@ -1,0 +1,93 @@
+.overlay {
+    position: fixed;
+    top: 25%;
+    right: 5%;
+    height: 50vh;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .container {
+    background: #222;
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    width: 400px;
+    max-height: 70vh;
+    overflow-y: auto;
+    text-align: center;
+    box-shadow: 0px 4px 10px rgba(255, 255, 255, 0.2);
+    position: relative;
+  }
+  
+  .closeBtn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #ff4444;
+    transition: color 0.2s ease-in-out;
+  }
+  
+  .closeBtn:hover {
+    color: white;
+  }
+  
+  .title {
+    font-size: 22px;
+    margin-bottom: 15px;
+  }
+  
+  .minionList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .minionCard {
+    background: #333;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0px 2px 5px rgba(255, 255, 255, 0.1);
+  }
+  
+  .minionName {
+    font-size: 18px;
+    margin-top: 8px;
+    margin-bottom: 0;
+  }
+  
+  .price {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0px 0;
+  }
+  
+  .buyBtn {
+    background: #28a745;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+  }
+  
+  .buyBtn:disabled {
+    background: #555;
+    cursor: not-allowed;
+  }
+  
+  .buyBtn:hover:not(:disabled) {
+    background: #218838;
+  }
