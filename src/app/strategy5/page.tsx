@@ -1,85 +1,112 @@
-import React from 'react';
+// src/app/strategy/page.tsx (e.g., strategy1)
+"use client";
+import React, { useState } from 'react';
 import Image from 'next/image';
-import styles from './Strategy.module.css'; // Import the CSS file
+import { useRouter } from 'next/navigation';
+import styles from './Strategy.module.css';
+import { useGameConfig } from '../../context/GameConfigContext';
 
 export default function StrategyPage() {
+  const router = useRouter();
+  const { minionTypes, addMinionType, minionCount } = useGameConfig();
+  const [minionName, setMinionName] = useState("");
+  const [defenseFactor, setDefenseFactor] = useState("");
+  const [strategyScript, setStrategyScript] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleSubmit = async () => {
+    setErrorMessage("");
+    const payload = {
+      name: minionName,
+      defenseFactor,
+      strategy: strategyScript,
+    };
+
+    try {
+      const response = await fetch("http://localhost:8080/api/saveMinionType", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        setErrorMessage(errorText);
+      } else {
+        // If valid, save the minion type in context.
+        addMinionType({
+          name: minionName,
+          defenseFactor: parseInt(defenseFactor, 10),
+          strategy: strategyScript,
+        });
+          // All minion types have been defined, navigate to the final launch page.
+          router.push("/launchgame");
+        }
+    } catch (error) {
+      console.error("Error submitting minion type:", error);
+      setErrorMessage("An unexpected error occurred. Please try again.");
+    }
+  };
+
   return (
     <div className={styles.container}>
-      {/* Container for the first image and input */}
       <div className={styles.imageAndInputContainer}>
-        {/* Image */}
         <div className={styles.imageContainer}>
-          <Image
-            src="/image/word/Create name.png" // Path to the image
-            alt="Create Name"
-            width={275} // Set the width of the image
-            height={34} // Set the height of the image
-          />
+          <Image src="/image/word/Create name.png" alt="Create Name" width={275} height={34} />
         </div>
-
-        {/* Text Input */}
         <div className={styles.inputContainer}>
-          <input type="text" placeholder="Enter your minion name" />
-        </div>
-      </div>
-
-      {/* Container for the second image and input */}
-      <div className={styles.strategyAndInputContainer}>
-        {/* Second Image */}
-        <div className={styles.strategyContainer}>
-          <Image
-            src="/image/word/STRATEGY MINION.png" // Path to the second image
-            alt="Strategy Minion"
-            width={724} // Set the width of the image
-            height={56} // Set the height of the image
+          <input
+            type="text"
+            placeholder="Enter your minion name"
+            value={minionName}
+            onChange={(e) => setMinionName(e.target.value)}
           />
         </div>
-
-        {/* Second Text Input */}
-        <div className={styles.strategyInputContainer}>
-        <textarea placeholder="Type your minion strategy here" />
-        </div>
-        
       </div>
+
+      <div className={styles.strategyAndInputContainer}>
+        <div className={styles.strategyContainer}>
+          <Image src="/image/word/STRATEGY MINION.png" alt="Strategy Minion" width={724} height={56} />
+        </div>
+        <div className={styles.strategyInputContainer}>
+          <textarea
+            placeholder="Type your minion strategy here"
+            value={strategyScript}
+            onChange={(e) => setStrategyScript(e.target.value)}
+          />
+        </div>
+      </div>
+
       <div className={styles.parentContainer}>
-  {/* Other content */}
-  <div className={styles.minionContainer}>
-    <Image
-      src="/image/component/minion5.png" // Path to the image
-      alt="Minion1"
-      width={379} // Set the width of the image
-      height={471} // Set the height of the image
-    />
-  </div>
-</div>
-<div className={styles.defImageAndInputContainer}>
-  
+        <div className={styles.minionContainer}>
+          <Image src="/image/component/minion5.png" alt="Minion1" width={379} height={471} />
+        </div>
+      </div>
 
-  <div className={styles.defImageContainer}>
-    <Image
-      src="/image/word/DEF.png"
-      alt="def"
-      width={114}
-      height={40}
-    />
-  </div>
-  
-  <div className={styles.defInputContainer}>
-    <input type="text" placeholder="Enter your minion DEF" />
-  </div>
+      <div className={styles.defImageAndInputContainer}>
+        <div className={styles.defImageContainer}>
+          <Image src="/image/word/DEF.png" alt="Defense" width={114} height={40} />
+        </div>
+        <div className={styles.defInputContainer}>
+          <input
+            type="text"
+            placeholder="Enter your minion DEF"
+            value={defenseFactor}
+            onChange={(e) => setDefenseFactor(e.target.value)}
+          />
+        </div>
+      </div>
 
-  
-</div>
-<button className={styles.newImageButton} >
-    <div className={styles.newImageContainer}>
-      <Image
-        src="/image/button/OK.png" // New button image
-        alt="new button"
-        width={135}  // Adjust width as necessary
-        height={79} // Adjust height as necessary
-      />
+      {errorMessage && (
+        <div className={styles.errorMessage}>
+          <p>{errorMessage}</p>
+        </div>
+      )}
+
+      <button className={styles.newImageButton} onClick={handleSubmit}>
+        <div className={styles.newImageContainer}>
+          <Image src="/image/button/OK.png" alt="OK button" width={135} height={79} />
+        </div>
+      </button>
     </div>
-  </button>
-</div>
   );
 }
