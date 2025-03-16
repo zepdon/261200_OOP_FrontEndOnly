@@ -5,10 +5,10 @@ import styles from "./BuyMinion.module.css";
 
 const minions = [
   { id: 1, src: "/image/Minion/minion1.png", name: "Minion 1", price: 1000 },
-  { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1500 },
-  { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 2000 },
-  { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 2500 },
-  { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 3000 },
+  { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1000 },
+  { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 1000 },
+  { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 1000 },
+  { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 1000 },
 ];
 
 interface BuyMinionProps {

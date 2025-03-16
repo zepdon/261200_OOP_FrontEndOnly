@@ -4,56 +4,54 @@ import Image from "next/image";
 import BuyMinion from "./BuyMinion";
 import styles from "./Hex.module.css";
 
-const HEX_RADIUS = 40;
-const COLS = 8;
-const ROWS = 8;
-const HEX_WIDTH = 2 * HEX_RADIUS;
-const HEX_HEIGHT = Math.sqrt(3) * HEX_RADIUS;
+const HEX_RADIUS = 40; // รัศมีของ Hexagon
+const COLS = 8; 
+const ROWS = 8; 
+const HEX_WIDTH = 2 * HEX_RADIUS; // ความกว้างของ Hex
+const HEX_HEIGHT = Math.sqrt(3) * HEX_RADIUS; // ความสูงของ Hex
 
-interface HexGridProps {
+interface HexGridProps { // Interface ของ HexGrid
   canAct: boolean;
-  initialBlueHexes?: string[];
-  initialRedHexes?: string[];
+  initialBlueHexes?: string[]; // Hex เริ่มต้นของทีม Blue
+  initialRedHexes?: string[]; // Hex เริ่มต้นของทีม Red
 }
-
 const HexGrid: React.FC<HexGridProps> = ({
   canAct,
-  initialBlueHexes = ["(1,1)", "(1,2)", "(2,1)", "(2,2)", "(1,3)"],
-  initialRedHexes = ["(7,7)", "(7,8)", "(8,6)", "(8,7)", "(8,8)"],
+  initialBlueHexes = ["(1,1)", "(1,2)", "(2,1)", "(2,2)", "(1,3)"], // Hex เริ่มต้นของทีม Blue
+  initialRedHexes = ["(7,7)", "(7,8)", "(8,6)", "(8,7)", "(8,8)"], // Hex เริ่มต้นของทีม Red
 }) => {
   const [locked, setLocked] = useState(false);
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false); //ควบคุมว่า Popup ของ UI
   const [goldBlue, setGoldBlue] = useState(10000); // เงินของ Player 1 (Blue)
   const [goldRed, setGoldRed] = useState(10000); // เงินของ Player 2 (Red)
-  const [selectedMinion, setSelectedMinion] = useState<null | { id: number; name: string; src: string }>(null);
-  const [selectedHexes, setSelectedHexes] = useState<Record<string, string>>({});
-  const [minionPositions, setMinionPositions] = useState<Record<string, { id: number; src: string; owner: "blue" | "red"; atk: number; def: number; hp: number }>>({});
-  const [pendingHex, setPendingHex] = useState<string | null>(null);
-  const [currentTurn, setCurrentTurn] = useState<"blue" | "red">("blue");
-  const [turnCount, setTurnCount] = useState(1);
-  const [highlightedHexes, setHighlightedHexes] = useState<Record<string, string>>({});
-  const [hasPlacedMinion, setHasPlacedMinion] = useState(false);
-  const [isBuyingHex, setIsBuyingHex] = useState(false);
-  const [hasBoughtHex, setHasBoughtHex] = useState(false);
-  const [selectedMinionInfo, setSelectedMinionInfo] = useState<{ id: number; owner: "blue" | "red"; atk: number; def: number; hp: number } | null>(null);
+  const [selectedMinion, setSelectedMinion] = useState<null | { id: number; name: string; src: string }>(null); //ใช้เก็บข้อมูลมินเนี่ยน
+  const [selectedHexes, setSelectedHexes] = useState<Record<string, string>>({}); //เก็บข้อมูล Hex
+  const [minionPositions, setMinionPositions] = useState<Record<string, { id: number; src: string; owner: "blue" | "red"; atk: number; def: number; hp: number }>>({}); //เก็บมินเนี่ยนทั้งหมดบนกระดาน โดยใช้ ตำแหน่ง (row,col) เป็น key
+  const [pendingHex, setPendingHex] = useState<string | null>(null); //ใช้เก็บ Hex ที่กำลังรอซื้อ
+  const [currentTurn, setCurrentTurn] = useState<"blue" | "red">("blue"); //ใช้บอกว่าเป็นเทิร์นของใคร
+  const [turnCount, setTurnCount] = useState(1); //บอกจำนวนรอบที่ผ่านไป
+  const [highlightedHexes, setHighlightedHexes] = useState<Record<string, string>>({}); //ใช้เก็บ Hex ที่สามารถซื้อได้
+  const [hasPlacedMinion, setHasPlacedMinion] = useState(false); // ตรวจสอบว่าวางมินเนี่ยนแล้วหรือยัง
+  const [isBuyingHex, setIsBuyingHex] = useState(false); // ใช้บอกว่า ผู้เล่นกำลังอยู่ในโหมดซื้อ Hex หรือไม่
+  const [hasBoughtHex, setHasBoughtHex] = useState(false); // ใช้บอกว่า ผู้เล่นซื้อ Hex ในรอบนี้แล้วหรือยัง
+  const [selectedMinionInfo, setSelectedMinionInfo] = useState<{ id: number; owner: "blue" | "red"; atk: number; def: number; hp: number } | null>(null); //ใช้เก็บ Status ของมินเนี่ยน
 
-  const minions = [
+  const minions = [ // ข้อมูลมินเนี่ยน
     { id: 1, src: "/image/Minion/minion1.png", name: "Minion 1", price: 1000 },
-    { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1500 },
-    { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 2000 },
-    { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 2500 },
-    { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 3000 },
+    { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1000 },
+    { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 1000 },
+    { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 1000 },
+    { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 1000 },
   ];
 
+  //ใช้กดเลือกซื้อมินเนียนในหน้า Shop แต่ยังไม่หักเงิน
   const handleBuyMinion = (minionId: number) => {
     const minion = minions.find(m => m.id === minionId);
     if (minion) {
       if (currentTurn === "blue" && goldBlue >= minion.price) {
-        //setGoldBlue(prev => prev - minion.price); // หักเงิน Player 1
-        setSelectedMinion(minion);
-        setIsPopupOpen(false);
+        setSelectedMinion(minion); // เลือกมินเนี่ยน
+        setIsPopupOpen(false); // ปิด Popup
       } else if (currentTurn === "red" && goldRed >= minion.price) {
-        //setGoldRed(prev => prev - minion.price); // หักเงิน Player 2
         setSelectedMinion(minion);
         setIsPopupOpen(false);
       } else {
@@ -62,6 +60,7 @@ const HexGrid: React.FC<HexGridProps> = ({
     }
   };
 
+  //ใช้สำหรับวางมินเนียนเมื่อกดเลือกมินเนียนจาก shop แล้วจะหักเงินเมื่อวางลงช่อง
   const handlePlaceMinion = (hexKey: string) => {
     if (selectedMinion) {
       const minion = minions.find(m => m.id === selectedMinion.id);
@@ -75,22 +74,22 @@ const HexGrid: React.FC<HexGridProps> = ({
           return;
         }
         alert(`Spawned ${selectedMinion.name} at ${hexKey}`);
-        setSelectedMinion(null);
+        setSelectedMinion(null); // รีเซ็ตมินเนี่ยนที่เลือก
       }
     }
   };
 
+    //คำนวณช่องสีเหลืองที่สามารถซื้อได้เมื่อจะซื้อช่อง
   const getColor = (turn: "blue" | "red") => (turn === "blue" ? "#3498db" : "#e74c3c");
-
   const calculateAdjacentHexes = (
-    currentHexes: Record<string, string>,
-    currentColor: "blue" | "red"
+    currentHexes: Record<string, string>, // ข้อมูล Hex ที่มีสีอยู่
+    currentColor: "blue" | "red" // สีของผู้เล่น
   ) => {
-    const adjacentHexes: Record<string, string> = {};
-    const targetColor = currentColor === "blue" ? "#3498db" : "#e74c3c";
+    const adjacentHexes: Record<string, string> = {}; //ใช้เก็บช่องที่สามารถซื้อได้
+    const targetColor = currentColor === "blue" ? "#3498db" : "#e74c3c"; //กำหนดสีของผู้เล่นที่กำลังตรวจสอบ
     const adjacentColor = "#F4D03F"; // สีเหลืองสำหรับช่องที่สามารถซื้อได้
 
-    Object.entries(currentHexes).forEach(([hex, color]) => {
+    Object.entries(currentHexes).forEach(([hex, color]) => { //วนลูปเช็ค Hex ที่มีสีอยู่
       if (color !== targetColor) return;
 
       const match = hex.match(/\((\d+),(\d+)\)/);
@@ -99,20 +98,20 @@ const HexGrid: React.FC<HexGridProps> = ({
       const [_, rowStr, colStr] = match;
       const row = parseInt(rowStr, 10);
       const col = parseInt(colStr, 10);
-
-      const directions = col % 2 === 0
+      
+      const directions = col % 2 === 0 //หาทิศทางของ Hex ที่อยู่ติดกัน
         ? [[-1, 0], [-1, 1], [0, 1], [1, 0], [0, -1], [-1, -1]]
         : [[-1, 0], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
 
-      directions.forEach(([dr, dc]) => {
+      directions.forEach(([dr, dc]) => { //วนลูปเช็คแต่ละช่องที่อยู่รอบๆ
         const adjRow = row + dr;
         const adjCol = col + dc;
-        const adjKey = `(${adjRow},${adjCol})`;
+        const adjKey = `(${adjRow},${adjCol})`; //สร้าง key ใหม่เพื่อเช็คว่ามีสีอยู่หรือไม่
 
-        if (
+        if ( //เช็คว่า Hex ที่อยู่รอบ ๆ สามารถซื้อได้หรือไม่
           adjRow > 0 && adjRow <= ROWS &&
           adjCol > 0 && adjCol <= COLS &&
-          !currentHexes[adjKey] // ต้องไม่มีสีใด ๆ เลย
+          !currentHexes[adjKey] // ต้องไม่มีเจ้าของอยู่
         ) {
           adjacentHexes[adjKey] = adjacentColor;
         }
@@ -123,7 +122,7 @@ const HexGrid: React.FC<HexGridProps> = ({
   };
   
 
-  useEffect(() => {
+  useEffect(() => { // ตั้งค่า Hex เริ่มต้นของทีม Blue และ Red
     const initialBlue: Record<string, string> = Object.create(null);
     initialBlueHexes.forEach(key => (initialBlue[key] = "#3498db"));
     const initialRed: Record<string, string> = Object.create(null);
@@ -131,7 +130,7 @@ const HexGrid: React.FC<HexGridProps> = ({
     setSelectedHexes({ ...initialBlue, ...initialRed });
   }, []);
 
-  useEffect(() => {
+  useEffect(() => { // คำนวณ Hex ที่สามารถซื้อได้เมื่ออยู่ในโหมดซื้อ Hex
     if (isBuyingHex) {
       const adjacentHexes = calculateAdjacentHexes(selectedHexes, currentTurn);
       setHighlightedHexes(adjacentHexes);
@@ -140,15 +139,14 @@ const HexGrid: React.FC<HexGridProps> = ({
     }
   }, [selectedHexes, currentTurn, isBuyingHex]);
 
-  const handleHexClick = (row: number, col: number) => {
+  const handleHexClick = (row: number, col: number) => { // ฟังก์ชันเมื่อคลิกที่ Hex
     if (!canAct || locked) return;
     const key = `(${row},${col})`;
   
-    if (isBuyingHex) {
-      if (key in highlightedHexes) {
-        // ตรวจสอบเงินของผู้เล่นที่กำลังเล่นเทิร์น
+    if (isBuyingHex) { // ถ้าอยู่ในโหมดซื้อ Hex
+      if (key in highlightedHexes) { // ตรวจสอบเงินของผู้เล่นที่กำลังเล่นเทิร์นว่าพอจะซื้อช่องหรือเปล่า
         const currentGold = currentTurn === "blue" ? goldBlue : goldRed;
-        if (currentGold >= 1000) {
+        if (currentGold >= 500) {
           setSelectedHexes(prev => ({
             ...prev,
             [key]: getColor(currentTurn),
@@ -168,7 +166,8 @@ const HexGrid: React.FC<HexGridProps> = ({
       }
       return;
     }
-  
+
+    // หากคลิกที่ Hex ของตัวเองและมีมินเนี่ยนที่เลือกอยู่
     const isPlayerHex = selectedHexes[key] === getColor(currentTurn);
   
     if (selectedMinion && isPlayerHex) {
@@ -211,37 +210,38 @@ const HexGrid: React.FC<HexGridProps> = ({
       return;
     }
   
-    if (minionPositions[key]) {
+    if (minionPositions[key]) { // หากคลิกที่มินเนี่ยนที่มีอยู่แล้ว
       setSelectedMinionInfo(minionPositions[key]);
     }
   };
 
-  const handleEndTurn = () => {
-    setCurrentTurn(prev => (prev === "blue" ? "red" : "blue"));
-    setTurnCount(prev => prev + 1);
+  const handleEndTurn = () => {   // ฟังก์ชันสิ้นสุดเทิร์น
+    setCurrentTurn(prev => (prev === "blue" ? "red" : "blue")); // สลับเทิร์นระหว่าง Blue และ Red
+    setTurnCount(prev => prev + 1); // เพิ่มจำนวนเทิร์นที่ผ่านไป
     setLocked(false);
-    setPendingHex(null);
-    setHasPlacedMinion(false);
-    setHasBoughtHex(false);
-    setHighlightedHexes({});
+    setPendingHex(null); // รีเซ็ต Hex ที่กำลังรอการซื้อ
+    setHasPlacedMinion(false); // รีเซ็ตสถานะการวางมินเนี่ยน
+    setHasBoughtHex(false); // รีเซ็ตสถานะการซื้อ Hex
+    setHighlightedHexes({}); // รีเซ็ต Hex ที่สามารถซื้อได้
   };
 
-  const handleCloseStatus = () => {
+  const handleCloseStatus = () => {   // ฟังก์ชันปิดหน้าต่างสถานะมินเนี่ยน
     setSelectedMinionInfo(null);
   };
 
+  // สร้าง Hex Board 
   const hexagons: React.ReactElement[] = [];
   for (let row = 1; row <= ROWS; row++) {
     for (let col = 1; col <= COLS; col++) {
-      const x = (col - 1) * HEX_WIDTH * 0.75;
-      const y = (row - 1) * HEX_HEIGHT + (col % 2 === 1 ? HEX_HEIGHT / 2 : 0);
+      const x = (col - 1) * HEX_WIDTH * 0.75;  //คำนวณตำแหน่ง colum 
+      const y = (row - 1) * HEX_HEIGHT + (col % 2 === 1 ? HEX_HEIGHT / 2 : 0); //คำนวณตำแหน่ง row 
       const key = `(${row},${col})`;
       const fillColor = selectedHexes[key] || highlightedHexes[key] || "none";
       const minion = minionPositions[key];
 
-      hexagons.push(
-        <g key={key} transform={`translate(${x},${y})`}>
-          <polygon
+      hexagons.push( // transform เอา Hex ไปอยู่ตำแหน่งที่คำนวณไว้
+        <g key={key} transform={`translate(${x},${y})`}> 
+          <polygon //กำหนดพิกัดของหกเหลี่ยม
             points={` 
               ${HEX_RADIUS * 0.5},0 
               ${HEX_RADIUS * 1.5},0 
@@ -257,16 +257,16 @@ const HexGrid: React.FC<HexGridProps> = ({
               pointerEvents: "all",
               cursor: key in highlightedHexes || selectedMinion ? "pointer" : "default",
             }}
-            onClick={() => handleHexClick(row, col)}
+            onClick={() => handleHexClick(row, col)} //ใช้สำหรับการเลือกซื้อ Hex
           />
           {minion && (
             <image
               href={minion.src}
-              x={HEX_RADIUS * 0.1}
-              y={HEX_HEIGHT * -0.2}
+              x={HEX_RADIUS * 0.1} //กำหนดตำแหน่งแกน X ของภาพ
+              y={HEX_HEIGHT * -0.2} //กำหนดตำแหน่งแกน Y ของภาพ
               width={HEX_RADIUS * 1.5}
               height={HEX_HEIGHT * 1.5}
-              onClick={() => setSelectedMinionInfo(minion)}
+              onClick={() => setSelectedMinionInfo(minion)} // เมื่อกดคลิกตัวมินเนียนในสนามจะเปิด Status ขึ้นมา
             />
           )}
         </g>
@@ -276,6 +276,8 @@ const HexGrid: React.FC<HexGridProps> = ({
 
   return (
     <div style={{ position: "relative" }}>
+
+      {/* UI Player 1 */}
       <div style={{ position: 'fixed', top: '5%', left: '3%', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <Image
           src="/image/profile/profile.png"
@@ -297,6 +299,8 @@ const HexGrid: React.FC<HexGridProps> = ({
         )}
         <h1>Player1</h1>
       </div>
+
+      {/* UI Player 2 */}
       <div style={{ position: 'fixed', bottom: '5%', right: '3%', display: 'flex', alignItems: 'center', gap: '10px' }}>
         <h1>Player2</h1>
         <Image
@@ -306,6 +310,8 @@ const HexGrid: React.FC<HexGridProps> = ({
           height={100}
         />
       </div>
+
+      {/* UI ส่วนของเงิน */}
       <div style={{ position: 'fixed', bottom: '5%', left: '3%', display: 'flex', alignItems: 'end', gap: '10px' }}>
         <Image
           src="/image/icon/money-bag 1.png"
@@ -317,7 +323,9 @@ const HexGrid: React.FC<HexGridProps> = ({
           {currentTurn === "blue" ? goldBlue : goldRed} {/* แสดงเงินของผู้เล่นที่กำลังเล่นเทิร์น */}
         </h1>
       </div>
-      <svg
+
+      {/* SVG สำหรับแสดง Hex Board */}
+      <svg 
         width={(COLS * HEX_WIDTH * 0.75) + HEX_RADIUS}
         height={(ROWS * HEX_HEIGHT) + (HEX_HEIGHT / 2)}
         viewBox={`0 0 ${(COLS * HEX_WIDTH * 0.75) + HEX_RADIUS} ${(ROWS * HEX_HEIGHT) + (HEX_HEIGHT / 2)}`}
@@ -325,6 +333,8 @@ const HexGrid: React.FC<HexGridProps> = ({
       >
         {hexagons}
       </svg>
+
+      {/* ปุ่ม Buy Hex */}
       <button
         style={{
           position: "fixed",
@@ -348,6 +358,8 @@ const HexGrid: React.FC<HexGridProps> = ({
       >
         Buy Hex
       </button>
+
+      {/* ปุ่ม Done */}
       <button
         style={{
           position: "fixed",
@@ -365,6 +377,8 @@ const HexGrid: React.FC<HexGridProps> = ({
       >
         Done
       </button>
+
+      {/* แสดงจำนวนเทิร์น */}
       <div
         style={{
           position: "fixed",
@@ -379,6 +393,8 @@ const HexGrid: React.FC<HexGridProps> = ({
       >
         Turn Count: {turnCount}
       </div>
+
+      {/* แสดงเทิร์นปัจจุบัน */}
       <div
         style={{
           position: "fixed",
@@ -393,6 +409,8 @@ const HexGrid: React.FC<HexGridProps> = ({
       >
         {currentTurn} Turn
       </div>
+
+      {/* แสดงสถานะมินเนี่ยน */}
       {selectedMinionInfo && (
         <div
           style={{
