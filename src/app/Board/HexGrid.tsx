@@ -215,6 +215,57 @@ const HexGrid: React.FC<HexGridProps> = ({
     }
   };
 
+  const moveMinions = () => {
+    const newMinionPositions = { ...minionPositions }; //ลอกข้อมูลจาก minionPositions
+    const minionKeys = Object.keys(newMinionPositions).filter(key => newMinionPositions[key].owner === currentTurn); //เช็ค minnion ของคนที่กำลังเล่นอยู่
+  
+    minionKeys.forEach(key => { //loop เดินมินเนียนแต่ละตัว
+      const minion = newMinionPositions[key];
+      const match = key.match(/\((\d+),(\d+)\)/); // แยกแถว (row) และคอลัมน์ (col) จาก key
+      if (!match) return;  // ถ้าไม่ตรงกับ key ให้ออกจากลูป
+  
+      const [_, rowStr, colStr] = match;
+      const row = parseInt(rowStr, 10); //แปลง row เป็นเลข
+      const col = parseInt(colStr, 10); //แปลง col เป็นเลข
+  
+      // กำหนดทิศทางที่มินเนี่ยนสามารถเคลื่อนที่ได้
+      const directions = col % 2 === 0
+      //colum คู่
+        ? [[-1, 0], //บน
+          [-1, 1], //ขวาบน
+          [0, 1], //ขวาล่าง
+          [1, 0], //ล่าง
+          [0, -1], //ซ้ายบน
+          [-1, -1]] //ซ้ายล่าง
+      //colum คี่
+        : [[-1, 0], //บน
+          [0, 1], //ขวาขวา
+          [1, 1], //ขวาล่าง
+          [1, 0], //ล่าง
+          [1, -1], //ซ้ายบน
+          [0, -1]]; //ซ้ายล่าง
+  
+      // สุ่มเลือกทิศทางจากทิศทางที่เป็นไปได้ (ถ้าจะแก้ทิศทางเดินให้แก้ตรงนี้กับข้างบน) ไม่ก็ทำเช็คเคสดู
+      const [dr, dc] = directions[Math.floor(Math.random() * directions.length)]; // เลือกทิศแบบสุ่ม
+       // คำนวณตำแหน่งใหม่จากทิศทางที่สุ่มได้
+      const newRow = row + dr;
+      const newCol = col + dc;
+      const newKey = `(${newRow},${newCol})`; //สร้าง key ใหม่
+      
+      //เช็คว่าตำแหน่งใหม่จะเดินได้
+      if (
+        newRow > 0 && newRow <= ROWS &&
+        newCol > 0 && newCol <= COLS &&
+        !newMinionPositions[newKey] // ตรวจสอบว่าไม่มีมินเนี่ยนอื่นอยู่
+      ) {
+        delete newMinionPositions[key]; // ลบมินเนี่ยนออกจากตำแหน่งเดิม
+        newMinionPositions[newKey] = minion; // ย้ายมินเนี่ยนไปตำแหน่งใหม่
+      }
+    });
+    // อัปเดตตำแหน่งมินเนี่ยนทั้งหมด
+    setMinionPositions(newMinionPositions);
+  };
+
   const handleEndTurn = () => {   // ฟังก์ชันสิ้นสุดเทิร์น
     setCurrentTurn(prev => (prev === "blue" ? "red" : "blue")); // สลับเทิร์นระหว่าง Blue และ Red
     setTurnCount(prev => prev + 1); // เพิ่มจำนวนเทิร์นที่ผ่านไป
@@ -223,6 +274,7 @@ const HexGrid: React.FC<HexGridProps> = ({
     setHasPlacedMinion(false); // รีเซ็ตสถานะการวางมินเนี่ยน
     setHasBoughtHex(false); // รีเซ็ตสถานะการซื้อ Hex
     setHighlightedHexes({}); // รีเซ็ต Hex ที่สามารถซื้อได้
+    moveMinions(); // เดินมินเนี่ยนตอนจบเทิร์น
   };
 
   const handleCloseStatus = () => {   // ฟังก์ชันปิดหน้าต่างสถานะมินเนี่ยน
