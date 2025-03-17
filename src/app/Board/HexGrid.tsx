@@ -413,22 +413,24 @@ const HexGrid: React.FC<HexGridProps> = ({
 
       {/* ปุ่ม Done */}
       <button
-        style={{
-          position: "fixed",
-          top: "35%",
-          left: "6%",
-          fontSize: "1.5rem",
-          fontWeight: "bold",
-          backgroundColor: "white",
-          color: "black",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-        }}
-        onClick={handleEndTurn}
-      >
-        Done
-      </button>
+  style={{
+    position: "fixed",
+    top: "35%",
+    left: "6%",
+    fontSize: "1.5rem",
+    fontWeight: "bold",
+    backgroundColor: turnCount >= 3 || hasPlacedMinion ? "white" : "gray", 
+    color: "black",
+    border: "none",
+    borderRadius: "8px",
+    cursor: turnCount >= 3 || hasPlacedMinion ? "pointer" : "not-allowed", 
+  }}
+  onClick={handleEndTurn}
+  disabled={turnCount < 3 ? !hasPlacedMinion : false} 
+>
+  Done
+</button>
+
 
       {/* แสดงจำนวนเทิร์น */}
       <div
