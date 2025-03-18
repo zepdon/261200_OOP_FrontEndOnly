@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react"; 
 import Image from "next/image";
 import styles from "./BuyMinion.module.css";
 
@@ -18,13 +18,21 @@ interface BuyMinionProps {
 }
 
 const BuyMinion: React.FC<BuyMinionProps> = ({ onClose, onBuy, gold }) => {
+  const [showCount] = useState<number>(3); // State เพื่อเก็บจำนวนมินเนียนที่ต้องการแสดง
+  
+  // ใช้ showCount เพื่อกำหนดจำนวนมินเนียนที่จะแสดง
+  const displayedMinions = minions.slice(0, showCount); //คือ Array ใช้กำหนดเลือกส่วนที่จะให้แสดง (ตัวเริ่ม, ตัวสุดท้าย)
+
   return (
-        <div className={styles.overlay}>
-        <div className={styles.container}>
-        <button className={styles.closeBtn} onClick={onClose}>✖</button>
+    <div className={styles.overlay}>
+      <div className={styles.container}>
+        <button className={styles.closeBtn} onClick={onClose}>
+          ✖
+        </button>
         <h2 className={styles.title}>Buy Minion</h2>
+
         <div className={styles.minionList}>
-          {minions.map((minion) => (
+          {displayedMinions.map((minion) => ( //วนลูป displayedMinions และสร้าง <div> สำหรับมินเนียนแต่ละตัว
             <div key={minion.id} className={styles.minionCard}>
               <Image
                 src={minion.src}
@@ -34,7 +42,10 @@ const BuyMinion: React.FC<BuyMinionProps> = ({ onClose, onBuy, gold }) => {
                 unoptimized={true}
               />
               <p className={styles.minionName}>{minion.name}</p>
-              <p className={styles.price} style={{ color: gold >= minion.price ? "#FFD700" : "#FF4444" }}>
+              <p
+                className={styles.price}
+                style={{ color: gold >= minion.price ? "#FFD700" : "#FF4444" }}
+              >
                 {minion.price} Gold
               </p>
               <button
