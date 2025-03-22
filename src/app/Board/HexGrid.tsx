@@ -3,57 +3,100 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import BuyMinion from "./BuyMinion";
 import styles from "./Hex.module.css";
+import { webSocketService } from "../../services/websocket";
+import { stdout } from "process";
 
+// Define interfaces
+interface HexGridProps {
+  canAct: boolean;
+}
+
+interface BoardUpdate {
+  row: number;
+  col: number;
+  player: "blue" | "red";
+  action: "placeMinion" | "buyHex";
+  minion?: {
+    id: number;
+    src: string;
+    def: number;
+    hp: number;
+  };
+}
+
+interface Minion {
+  id: number;
+  src: string;
+  name: string;
+  price: number;
+}
+
+type Player = "blue" | "red";
+
+// Constants for hex grid
 const HEX_RADIUS = 40;
 const COLS = 8;
 const ROWS = 8;
 const HEX_WIDTH = 2 * HEX_RADIUS;
 const HEX_HEIGHT = Math.sqrt(3) * HEX_RADIUS;
 
-interface HexGridProps {
-  canAct: boolean;
-  initialBlueHexes?: string[];
-  initialRedHexes?: string[];
-}
+// Helper function to get player color
+const getColor = (turn: "blue" | "red") => (turn === "blue" ? "#3498db" : "#e74c3c");
 
-const HexGrid: React.FC<HexGridProps> = ({
-  canAct,
-  initialBlueHexes = ["(1,1)", "(1,2)", "(2,1)", "(2,2)", "(1,3)"],
-  initialRedHexes = ["(7,7)", "(7,8)", "(8,6)", "(8,7)", "(8,8)"],
-}) => {
+
+const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
+  // State variables
+  const [minionPositions, setMinionPositions] = useState<
+    Record<string, { id: number; src: string; owner: Player;  def: number; hp: number }>
+  >({});
   const [locked, setLocked] = useState(false);
-  const [isPopupOpen, setIsPopupOpen] = useState(false);
-  const [goldBlue, setGoldBlue] = useState(10000); // เงินของ Player 1 (Blue)
-  const [goldRed, setGoldRed] = useState(10000); // เงินของ Player 2 (Red)
-  const [selectedMinion, setSelectedMinion] = useState<null | { id: number; name: string; src: string }>(null);
   const [selectedHexes, setSelectedHexes] = useState<Record<string, string>>({});
-  const [minionPositions, setMinionPositions] = useState<Record<string, { id: number; src: string; owner: "blue" | "red"; atk: number; def: number; hp: number }>>({});
-  const [pendingHex, setPendingHex] = useState<string | null>(null);
-  const [currentTurn, setCurrentTurn] = useState<"blue" | "red">("blue");
+  const [selectedMinion, setSelectedMinion] = useState<Minion | null>(null);
+  const [currentTurn, setCurrentTurn] = useState<Player>("blue");
+  const [isBuyingHex, setIsBuyingHex] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [goldBlue, setGoldBlue] = useState(0);
+  const [goldRed, setGoldRed] = useState(0);
   const [turnCount, setTurnCount] = useState(1);
+  const [hasBoughtHex, setHasBoughtHex] = useState(false);
   const [highlightedHexes, setHighlightedHexes] = useState<Record<string, string>>({});
   const [hasPlacedMinion, setHasPlacedMinion] = useState(false);
-  const [isBuyingHex, setIsBuyingHex] = useState(false);
-  const [hasBoughtHex, setHasBoughtHex] = useState(false);
-  const [selectedMinionInfo, setSelectedMinionInfo] = useState<{ id: number; owner: "blue" | "red"; atk: number; def: number; hp: number } | null>(null);
+  const [pendingHex, setPendingHex] = useState<string | null>(null);
+  const [selectedMinionInfo, setSelectedMinionInfo] = useState<{
+    id: number;
+    owner: Player;
+    def: number;
+    hp: number;
+  } | null>(null);
+  const [indexminiontosent, setindexminiontosent] = useState<{
+    id: number;
+    row: number;
+    col: number;
+  } | null>(null);
+  const [showCount,setshowCount] = useState<number>(0);
 
-  const minions = [
+  // Minions data
+  const minions: Minion[] = [
     { id: 1, src: "/image/Minion/minion1.png", name: "Minion 1", price: 1000 },
-    { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1500 },
-    { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 2000 },
-    { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 2500 },
-    { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 3000 },
+    { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1000 },
+    { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 1000 },
+    { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 1000 },
+    { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 1000 },
   ];
 
+  // Function to update the current turn
+  const updateTurn = () => {
+    setCurrentTurn(turnCount % 2 === 1 ? "blue" : "red");
+  };
+
+  // Function to handle buying a minion
   const handleBuyMinion = (minionId: number) => {
-    const minion = minions.find(m => m.id === minionId);
+    const minion = minions.find((m) => m.id === minionId);
     if (minion) {
       if (currentTurn === "blue" && goldBlue >= minion.price) {
-        //setGoldBlue(prev => prev - minion.price); // หักเงิน Player 1
-        setSelectedMinion(minion);
-        setIsPopupOpen(false);
+        setSelectedMinion(minion); // Select the minion
+        setIsPopupOpen(false); // Close the popup
       } else if (currentTurn === "red" && goldRed >= minion.price) {
-        //setGoldRed(prev => prev - minion.price); // หักเงิน Player 2
         setSelectedMinion(minion);
         setIsPopupOpen(false);
       } else {
@@ -62,76 +105,168 @@ const HexGrid: React.FC<HexGridProps> = ({
     }
   };
 
+  useEffect(() => {
+    const handleMessage = (update: BoardUpdate) => {
+      console.log("Received update:", update);
+      const { row, col, player, action, minion } = update;
+      const key = `(${row},${col})`;
+
+      if (action === "placeMinion" && minion) {
+        setMinionPositions((prev) => ({
+          ...prev,
+          [key]: { ...minion, owner: player },
+        }));
+      } else if (action === "buyHex") {
+        setSelectedHexes((prev) => ({
+          ...prev,
+          [key]: player === "blue" ? "#3498db" : "#e74c3c",
+        }));
+      }
+    };
+
+    const handlePlayer1Hexes = (hexes: string[]) => {
+      console.log("Received player 1 hexes:", hexes);
+      setSelectedHexes((prev) => {
+        const newHexes = { ...prev };
+        hexes.forEach((hexKey) => {
+          newHexes[hexKey] = "#3498db"; // Blue color
+        });
+        console.log("Updated selectedHexes:", newHexes);
+        return newHexes;
+      });
+    };
+
+    const handlePlayer2Hexes = (hexes: string[]) => {
+      console.log("Received player 2 hexes:", hexes);
+      setSelectedHexes((prev) => {
+        const newHexes = { ...prev };
+        hexes.forEach((hexKey) => {
+          newHexes[hexKey] = "#e74c3c"; // Red color
+        });
+        console.log("Updated selectedHexes:", newHexes);
+        return newHexes;
+      });
+    };
+
+    const handlePlayer1Budget = (budget: number) => {
+      console.log("Received player 1 budget:", budget);
+      setGoldBlue(budget); // Update player 1's budget
+    };
+
+    const handlePlayer2Budget = (budget: number) => {
+      console.log("Received player 2 budget:", budget);
+      setGoldRed(budget); // Update player 2's budget
+    };
+
+    const handleCurrentTurn = (turn: number) => {
+      console.log("Received current turn:", turn);
+      setTurnCount(turn); // Update turn count
+      
+    };
+
+    const handleMinionType = (type: number) => {
+      console.log("Received minion type:", type);
+      setshowCount(type); // Update minions count
+    };
+
+    // Request player-owned hexes and budgets when the component mounts
+    webSocketService.requestPlayerHexes();
+
+    // Connect to WebSocket and set up subscriptions
+    webSocketService.connect(
+      handleMessage,
+      handlePlayer1Hexes,
+      handlePlayer2Hexes,
+      handlePlayer1Budget,
+      handlePlayer2Budget,
+      handleCurrentTurn,
+      handleMinionType
+    );
+
+    // Cleanup on unmount
+    return () => {
+      webSocketService.disconnect();
+    };
+  }, []);
+
+  // Handle placing a minion
   const handlePlaceMinion = (hexKey: string) => {
     if (selectedMinion) {
-      const minion = minions.find(m => m.id === selectedMinion.id);
+      const minion = minions.find((m) => m.id === selectedMinion.id);
       if (minion) {
         if (currentTurn === "blue" && goldBlue >= minion.price) {
-          setGoldBlue(prev => prev - minion.price); // หักเงิน Player 1
+          setGoldBlue((prev) => prev - minion.price); // Deduct gold from Player 1
         } else if (currentTurn === "red" && goldRed >= minion.price) {
-          setGoldRed(prev => prev - minion.price); // หักเงิน Player 2
+          setGoldRed((prev) => prev - minion.price); // Deduct gold from Player 2
         } else {
           alert("คุณมีเงินไม่เพียงพอ!");
           return;
         }
         alert(`Spawned ${selectedMinion.name} at ${hexKey}`);
-        setSelectedMinion(null);
+        setSelectedMinion(null); // Reset selected minion
       }
     }
   };
 
-  const getColor = (turn: "blue" | "red") => (turn === "blue" ? "#3498db" : "#e74c3c");
+  // Handle buying a hex
+  const handleBuyHex = (hexKey: string) => {
+    const [row, col] = hexKey.slice(1, -1).split(",").map(Number);
+    const update: BoardUpdate = {
+      row,
+      col,
+      player: currentTurn,
+      action: "buyHex",
+    };
+    webSocketService.sendUpdate(update);
 
+    // Update local state
+    setSelectedHexes((prev) => ({
+      ...prev,
+      [hexKey]: currentTurn === "blue" ? "#3498db" : "#e74c3c",
+    }));
+    setHasBoughtHex(true);
+  };
   const calculateAdjacentHexes = (
-    currentHexes: Record<string, string>,
-    currentColor: "blue" | "red"
+    currentHexes: Record<string, string>, // ข้อมูล Hex ที่มีสีอยู่
+    currentColor: "blue" | "red" // สีของผู้เล่น
   ) => {
-    const adjacentHexes: Record<string, string> = {};
-    const targetColor = currentColor === "blue" ? "#3498db" : "#e74c3c";
+    const adjacentHexes: Record<string, string> = {}; //ใช้เก็บช่องที่สามารถซื้อได้
+    const targetColor = currentColor === "blue" ? "#3498db" : "#e74c3c"; //กำหนดสีของผู้เล่นที่กำลังตรวจสอบ
     const adjacentColor = "#F4D03F"; // สีเหลืองสำหรับช่องที่สามารถซื้อได้
-
-    Object.entries(currentHexes).forEach(([hex, color]) => {
+  
+    Object.entries(currentHexes).forEach(([hex, color]) => { //วนลูปเช็ค Hex ที่มีสีอยู่
       if (color !== targetColor) return;
-
+  
       const match = hex.match(/\((\d+),(\d+)\)/);
       if (!match) return;
-
+  
       const [_, rowStr, colStr] = match;
       const row = parseInt(rowStr, 10);
       const col = parseInt(colStr, 10);
-
-      const directions = col % 2 === 0
+      
+      const directions = col % 2 === 0 //หาทิศทางของ Hex ที่อยู่ติดกัน
         ? [[-1, 0], [-1, 1], [0, 1], [1, 0], [0, -1], [-1, -1]]
         : [[-1, 0], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
-
-      directions.forEach(([dr, dc]) => {
+  
+      directions.forEach(([dr, dc]) => { //วนลูปเช็คแต่ละช่องที่อยู่รอบๆ
         const adjRow = row + dr;
         const adjCol = col + dc;
-        const adjKey = `(${adjRow},${adjCol})`;
-
-        if (
+        const adjKey = `(${adjRow},${adjCol})`; //สร้าง key ใหม่เพื่อเช็คว่ามีสีอยู่หรือไม่
+  
+        if ( //เช็คว่า Hex ที่อยู่รอบ ๆ สามารถซื้อได้หรือไม่
           adjRow > 0 && adjRow <= ROWS &&
           adjCol > 0 && adjCol <= COLS &&
-          !currentHexes[adjKey] // ต้องไม่มีสีใด ๆ เลย
+          !currentHexes[adjKey] // ต้องไม่มีเจ้าของอยู่
         ) {
           adjacentHexes[adjKey] = adjacentColor;
         }
       });
     });
-
+  
     return adjacentHexes;
   };
   
-
-  useEffect(() => {
-    const initialBlue: Record<string, string> = Object.create(null);
-    initialBlueHexes.forEach(key => (initialBlue[key] = "#3498db"));
-    const initialRed: Record<string, string> = Object.create(null);
-    initialRedHexes.forEach(key => (initialRed[key] = "#e74c3c"));
-    setSelectedHexes({ ...initialBlue, ...initialRed });
-  }, []);
-
-  useEffect(() => {
+  useEffect(() => { // คำนวณ Hex ที่สามารถซื้อได้เมื่ออยู่ในโหมดซื้อ Hex
     if (isBuyingHex) {
       const adjacentHexes = calculateAdjacentHexes(selectedHexes, currentTurn);
       setHighlightedHexes(adjacentHexes);
@@ -139,29 +274,30 @@ const HexGrid: React.FC<HexGridProps> = ({
       setHighlightedHexes({});
     }
   }, [selectedHexes, currentTurn, isBuyingHex]);
-
+  // Handle hex click
   const handleHexClick = (row: number, col: number) => {
     if (!canAct || locked) return;
     const key = `(${row},${col})`;
   
     if (isBuyingHex) {
       if (key in highlightedHexes) {
-        // ตรวจสอบเงินของผู้เล่นที่กำลังเล่นเทิร์น
         const currentGold = currentTurn === "blue" ? goldBlue : goldRed;
-        if (currentGold >= 1000) {
-          setSelectedHexes(prev => ({
+        if (currentGold >= 500) {
+          setSelectedHexes((prev) => ({
             ...prev,
             [key]: getColor(currentTurn),
           }));
           setIsBuyingHex(false);
           setHasBoughtHex(true);
           setHighlightedHexes({});
-          // หักเงินของผู้เล่นที่กำลังเล่นเทิร์น
           if (currentTurn === "blue") {
-            setGoldBlue(prevGold => prevGold - 500);
+            setGoldBlue((prevGold) => prevGold - 500);
           } else {
-            setGoldRed(prevGold => prevGold - 500);
+            setGoldRed((prevGold) => prevGold - 500);
           }
+  
+          // Set pending hex for turn data
+          setPendingHex(key);
         } else {
           alert("คุณมีเงินไม่เพียงพอ!");
         }
@@ -179,34 +315,38 @@ const HexGrid: React.FC<HexGridProps> = ({
       const newMinion = {
         ...selectedMinion,
         owner: currentTurn,
-        atk: 5,
+        
         def: 5,
-        hp: 100
+        hp: 100,
       };
-      setMinionPositions(prev => ({
+      setMinionPositions((prev) => ({
         ...prev,
         [key]: newMinion,
       }));
   
-      // ตรวจสอบเงินของผู้เล่นที่กำลังเล่นเทิร์น
-      const minion = minions.find(m => m.id === selectedMinion.id);
+      const minion = minions.find((m) => m.id === selectedMinion.id);
       if (minion) {
         const currentGold = currentTurn === "blue" ? goldBlue : goldRed;
         if (currentGold >= minion.price) {
-          // หักเงินของผู้เล่นที่กำลังเล่นเทิร์น
           if (currentTurn === "blue") {
-            setGoldBlue(prevGold => prevGold - minion.price);
+            setGoldBlue((prevGold) => prevGold - minion.price);
           } else {
-            setGoldRed(prevGold => prevGold - minion.price);
+            setGoldRed((prevGold) => prevGold - minion.price);
           }
           alert(`Spawned ${selectedMinion.name} at ${key}`);
-          setSelectedMinion(null); // รีเซ็ตมินเนียนที่เลือก
+          setSelectedMinion(null);
+  
+          // Set minion data for turn data
+          setindexminiontosent({ 
+            id: selectedMinion.id, 
+            row, 
+            col 
+          });
         } else {
           alert("คุณมีเงินไม่เพียงพอ!");
           return;
         }
       }
-  
       setHasPlacedMinion(true);
       return;
     }
@@ -216,21 +356,44 @@ const HexGrid: React.FC<HexGridProps> = ({
     }
   };
 
+  // Handle ending the turn
   const handleEndTurn = () => {
+    // Gather the necessary data for the turn
+    const turnData = {
+      minionRow: indexminiontosent?.row || -1, // Use -1 if no minion is placed
+      minionCol: indexminiontosent?.col || -1, // Use -1 if no minion is placed
+      hexRow: pendingHex ? parseInt(pendingHex.match(/\((\d+),(\d+)\)/)![1], 10) : -1, // Use -1 if no hex is bought
+      hexCol: pendingHex ? parseInt(pendingHex.match(/\((\d+),(\d+)\)/)![2], 10) : -1, // Use -1 if no hex is bought
+      typeIndex: indexminiontosent?.id || -1, // Use the minion's ID as typeIndex
+    };
+  
+    // Send the turn data to the backend
+    webSocketService.publish("/app/board/perform-turn", JSON.stringify(turnData));
     setCurrentTurn(prev => (prev === "blue" ? "red" : "blue"));
-    setTurnCount(prev => prev + 1);
-    setLocked(false);
-    setPendingHex(null);
-    setHasPlacedMinion(false);
-    setHasBoughtHex(false);
-    setHighlightedHexes({});
+    
+    // Reset states and update the turn
+    // webSocketService.publish("/app/board/request-current-turn", JSON.stringify({})); // Request current turn
+    // webSocketService.publish("/app/board/request-player1-hexes", JSON.stringify({})); // Request player 1 hexes
+    // webSocketService.publish("/app/board/request-player2-hexes", JSON.stringify({})); // Request player 2 hexes
+    // webSocketService.publish("/app/board/request-player1-budget", JSON.stringify({})); // Request player 1 budget
+    // webSocketService.publish("/app/board/request-player2-budget", JSON.stringify({})); // Request player 2 budget
+  
+     // Update the turn locally
+    setLocked(false); // Unlock the board
+    setPendingHex(null); // Reset pending hex
+    setHasPlacedMinion(false); // Reset minion placement status
+    setHasBoughtHex(false); // Reset hex purchase status
+    setHighlightedHexes({}); // Reset highlighted hexes
+    setindexminiontosent(null); // Reset minion data
   };
 
+  // Handle closing the minion status popup
   const handleCloseStatus = () => {
     setSelectedMinionInfo(null);
   };
 
-  const hexagons: React.ReactElement[] = [];
+  // Generate hexagons
+  const hexagons: JSX.Element[] = [];
   for (let row = 1; row <= ROWS; row++) {
     for (let col = 1; col <= COLS; col++) {
       const x = (col - 1) * HEX_WIDTH * 0.75;
@@ -242,7 +405,7 @@ const HexGrid: React.FC<HexGridProps> = ({
       hexagons.push(
         <g key={key} transform={`translate(${x},${y})`}>
           <polygon
-            points={` 
+            points={`
               ${HEX_RADIUS * 0.5},0 
               ${HEX_RADIUS * 1.5},0 
               ${HEX_RADIUS * 2},${HEX_HEIGHT / 2} 
@@ -289,11 +452,12 @@ const HexGrid: React.FC<HexGridProps> = ({
           </div>
         </div>
         {isPopupOpen && (
-        <BuyMinion
-          onClose={() => setIsPopupOpen(false)}
-          onBuy={handleBuyMinion}
-          gold={currentTurn === "blue" ? goldBlue : goldRed} // ส่งเงินของผู้เล่นที่กำลังเล่นเทิร์น
-        />
+          <BuyMinion
+            onClose={() => setIsPopupOpen(false)}
+            onBuy={handleBuyMinion}
+            gold={currentTurn === "blue" ? goldBlue : goldRed} // Send current player's gold
+            showCount={showCount}
+          />
         )}
         <h1>Player1</h1>
       </div>
@@ -314,7 +478,7 @@ const HexGrid: React.FC<HexGridProps> = ({
           height={100}
         />
         <h1 style={{ color: '#f4d03f' }}>
-          {currentTurn === "blue" ? goldBlue : goldRed} {/* แสดงเงินของผู้เล่นที่กำลังเล่นเทิร์น */}
+          {currentTurn === "blue" ? goldBlue : goldRed} {/* Show current player's gold */}
         </h1>
       </div>
       <svg
@@ -341,7 +505,7 @@ const HexGrid: React.FC<HexGridProps> = ({
         onClick={() => {
           if (turnCount >= 3) {
             setIsBuyingHex(true);
-            highlightedHexes
+            highlightedHexes;
           }
         }}
         disabled={turnCount < 3 || hasBoughtHex}
@@ -355,13 +519,14 @@ const HexGrid: React.FC<HexGridProps> = ({
           left: "6%",
           fontSize: "1.5rem",
           fontWeight: "bold",
-          backgroundColor: "white",
+          backgroundColor: turnCount >= 3 || hasPlacedMinion ? "white" : "gray",
           color: "black",
           border: "none",
           borderRadius: "8px",
-          cursor: "pointer",
+          cursor: turnCount >= 3 || hasPlacedMinion ? "pointer" : "not-allowed",
         }}
         onClick={handleEndTurn}
+        disabled={turnCount < 3 ? !hasPlacedMinion : false}
       >
         Done
       </button>
@@ -424,7 +589,6 @@ const HexGrid: React.FC<HexGridProps> = ({
           <p style={{ fontWeight: "bold" }}>Minion status</p>
           <p>Owner: {selectedMinionInfo.owner}</p>
           <p>HP: {selectedMinionInfo.hp}</p>
-          <p>ATK: {selectedMinionInfo.atk}</p>
           <p>DEF: {selectedMinionInfo.def}</p>
         </div>
       )}

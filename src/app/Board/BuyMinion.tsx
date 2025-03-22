@@ -1,30 +1,38 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import styles from "./BuyMinion.module.css";
+import { webSocketService } from "../../services/websocket";
 
 const minions = [
   { id: 1, src: "/image/Minion/minion1.png", name: "Minion 1", price: 1000 },
-  { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1500 },
-  { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 2000 },
-  { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 2500 },
-  { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 3000 },
+  { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1000 },
+  { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 1000 },
+  { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 1000 },
+  { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 1000 },
 ];
 
 interface BuyMinionProps {
   onClose: () => void;
   onBuy: (minionId: number) => void;
   gold: number;
+  showCount: number; // Add showCount as a prop
 }
 
-const BuyMinion: React.FC<BuyMinionProps> = ({ onClose, onBuy, gold }) => {
+const BuyMinion: React.FC<BuyMinionProps> = ({ onClose, onBuy, gold, showCount }) => {
+  // Use showCount to determine the number of minions to display
+  const displayedMinions = minions.slice(0, showCount);
+
   return (
-        <div className={styles.overlay}>
-        <div className={styles.container}>
-        <button className={styles.closeBtn} onClick={onClose}>✖</button>
+    <div className={styles.overlay}>
+      <div className={styles.container}>
+        <button className={styles.closeBtn} onClick={onClose}>
+          ✖
+        </button>
         <h2 className={styles.title}>Buy Minion</h2>
+
         <div className={styles.minionList}>
-          {minions.map((minion) => (
+          {displayedMinions.map((minion) => (
             <div key={minion.id} className={styles.minionCard}>
               <Image
                 src={minion.src}
@@ -34,7 +42,10 @@ const BuyMinion: React.FC<BuyMinionProps> = ({ onClose, onBuy, gold }) => {
                 unoptimized={true}
               />
               <p className={styles.minionName}>{minion.name}</p>
-              <p className={styles.price} style={{ color: gold >= minion.price ? "#FFD700" : "#FF4444" }}>
+              <p
+                className={styles.price}
+                style={{ color: gold >= minion.price ? "#FFD700" : "#FF4444" }}
+              >
                 {minion.price} Gold
               </p>
               <button
