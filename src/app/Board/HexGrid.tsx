@@ -15,6 +15,19 @@ interface HexGridProps { // Interface ของ HexGrid
   initialBlueHexes?: string[]; // Hex เริ่มต้นของทีม Blue
   initialRedHexes?: string[]; // Hex เริ่มต้นของทีม Red
 }
+
+interface Minion {
+  id: number;
+  name: string;
+  price: number;
+  hp: number;
+  def: number;
+  owner: "blue" | "red";
+  src: string; // Path to the minion image
+  row: number; // Current row position
+  col: number; // Current column position
+}
+
 const HexGrid: React.FC<HexGridProps> = ({
   canAct,
   initialBlueHexes = ["(1,1)", "(1,2)", "(2,1)", "(2,2)", "(1,3)"], // Hex เริ่มต้นของทีม Blue
@@ -24,9 +37,9 @@ const HexGrid: React.FC<HexGridProps> = ({
   const [isPopupOpen, setIsPopupOpen] = useState(false); //ควบคุมว่า Popup ของ UI
   const [goldBlue, setGoldBlue] = useState(10000); // เงินของ Player 1 (Blue)
   const [goldRed, setGoldRed] = useState(10000); // เงินของ Player 2 (Red)
-  const [selectedMinion, setSelectedMinion] = useState<null | { id: number; name: string; src: string }>(null); //ใช้เก็บข้อมูลมินเนี่ยน
+  const [selectedMinion, setSelectedMinion] = useState<Minion | null>(null); //ใช้เก็บข้อมูลมินเนี่ยน
   const [selectedHexes, setSelectedHexes] = useState<Record<string, string>>({}); //เก็บข้อมูล Hex
-  const [minionPositions, setMinionPositions] = useState<Record<string, { id: number; src: string; owner: "blue" | "red"; atk: number; def: number; hp: number }>>({}); //เก็บมินเนี่ยนทั้งหมดบนกระดาน โดยใช้ ตำแหน่ง (row,col) เป็น key
+  const [minionPositions, setMinionPositions] = useState<Record<string, Minion>>({}); //เก็บมินเนี่ยนทั้งหมดบนกระดาน โดยใช้ ตำแหน่ง (row,col) เป็น key
   const [pendingHex, setPendingHex] = useState<string | null>(null); //ใช้เก็บ Hex ที่กำลังรอซื้อ
   const [currentTurn, setCurrentTurn] = useState<"blue" | "red">("blue"); //ใช้บอกว่าเป็นเทิร์นของใคร
   const [turnCount, setTurnCount] = useState(1); //บอกจำนวนรอบที่ผ่านไป
@@ -34,14 +47,34 @@ const HexGrid: React.FC<HexGridProps> = ({
   const [hasPlacedMinion, setHasPlacedMinion] = useState(false); // ตรวจสอบว่าวางมินเนี่ยนแล้วหรือยัง
   const [isBuyingHex, setIsBuyingHex] = useState(false); // ใช้บอกว่า ผู้เล่นกำลังอยู่ในโหมดซื้อ Hex หรือไม่
   const [hasBoughtHex, setHasBoughtHex] = useState(false); // ใช้บอกว่า ผู้เล่นซื้อ Hex ในรอบนี้แล้วหรือยัง
-  const [selectedMinionInfo, setSelectedMinionInfo] = useState<{ id: number; owner: "blue" | "red"; atk: number; def: number; hp: number } | null>(null); //ใช้เก็บ Status ของมินเนี่ยน
+  const [selectedMinionInfo, setSelectedMinionInfo] = useState<Minion | null>(null); //ใช้เก็บ Status ของมินเนี่ยน
+  const [nextMinionId, setNextMinionId] = useState(1); // เริ่มต้นที่ 1
 
-  const minions = [ // ข้อมูลมินเนี่ยน
-    { id: 1, src: "/image/Minion/minion1.png", name: "Minion 1", price: 1000 },
-    { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1000 },
-    { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 1000 },
-    { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 1000 },
-    { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 1000 },
+  const minions: Minion[] = [
+    {
+      id: 1, name: "Minion 1", price: 1000, hp: 100, def: 5, owner: "blue", src: "/image/Minion/minion1.png",
+      row: -1, // ยังไม่ได้วางบนกระดาน
+      col: -1,
+    },
+    {
+      id: 2,name: "Minion 2", price: 1000, hp: 100,def: 6, owner: "blue", src: "/image/Minion/minion2.png",
+      row: -1,
+      col: -1,
+    },
+    {
+      id: 3,name: "Minion 3", price: 1000,hp: 100, def: 4, owner: "blue", src: "/image/Minion/minion3.png",
+      row: -1,
+      col: -1,
+    },{
+      id: 4,name: "Minion 4", price: 1000, hp: 100, def: 5, owner: "blue", src: "/image/Minion/minion4.png",
+      row: -1,
+      col: -1,
+    },
+    {
+      id: 5,name: "Minion 5", price: 1000, hp: 100, def: 7, owner: "blue", src: "/image/Minion/minion5.png",
+      row: -1,
+      col: -1,
+    },
   ];
 
   //ใช้กดเลือกซื้อมินเนียนในหน้า Shop แต่ยังไม่หักเงิน
@@ -63,18 +96,46 @@ const HexGrid: React.FC<HexGridProps> = ({
   //ใช้สำหรับวางมินเนียนเมื่อกดเลือกมินเนียนจาก shop แล้วจะหักเงินเมื่อวางลงช่อง
   const handlePlaceMinion = (hexKey: string) => {
     if (selectedMinion) {
-      const minion = minions.find(m => m.id === selectedMinion.id);
-      if (minion) {
-        if (currentTurn === "blue" && goldBlue >= minion.price) {
-          setGoldBlue(prev => prev - minion.price); // หักเงิน Player 1
-        } else if (currentTurn === "red" && goldRed >= minion.price) {
-          setGoldRed(prev => prev - minion.price); // หักเงิน Player 2
+      const currentGold = currentTurn === "blue" ? goldBlue : goldRed;
+      if (currentGold >= selectedMinion.price) {
+        // หักเงิน
+        if (currentTurn === "blue") {
+          setGoldBlue((prev) => prev - selectedMinion.price);
         } else {
-          alert("คุณมีเงินไม่เพียงพอ!");
-          return;
+          setGoldRed((prev) => prev - selectedMinion.price);
         }
+  
+        // แยก row และ col จาก hexKey
+        const match = hexKey.match(/\((\d+),(\d+)\)/);
+        if (!match) return;
+  
+        const [_, rowStr, colStr] = match;
+        const row = parseInt(rowStr, 10);
+        const col = parseInt(colStr, 10);
+  
+        // สร้างมินเนี่ยนใหม่พร้อม owner และตำแหน่ง
+        const newMinion = {
+          ...selectedMinion,
+          id: nextMinionId, // ใช้ nextMinionId เป็น id ของมินเนี่ยนใหม่
+          owner: currentTurn,
+          row, // กำหนด row ใหม่
+          col, // กำหนด col ใหม่
+        };
+  
+        // เพิ่มมินเนี่ยนลงในตำแหน่งที่เลือก
+        setMinionPositions((prev) => ({
+          ...prev,
+          [hexKey]: newMinion,
+        }));
+  
+        // เพิ่มค่า nextMinionId ขึ้น 1
+        setNextMinionId((prev) => prev + 1);
+  
         alert(`Spawned ${selectedMinion.name} at ${hexKey}`);
         setSelectedMinion(null); // รีเซ็ตมินเนี่ยนที่เลือก
+        setHasPlacedMinion(true); // ตั้งค่าสถานะการวางมินเนี่ยน
+      } else {
+        alert("คุณมีเงินไม่เพียงพอ!");
       }
     }
   };
@@ -139,26 +200,25 @@ const HexGrid: React.FC<HexGridProps> = ({
     }
   }, [selectedHexes, currentTurn, isBuyingHex]);
 
-  const handleHexClick = (row: number, col: number) => { // ฟังก์ชันเมื่อคลิกที่ Hex
+  const handleHexClick = (row: number, col: number) => {
     if (!canAct || locked) return;
     const key = `(${row},${col})`;
   
-    if (isBuyingHex) { // ถ้าอยู่ในโหมดซื้อ Hex
-      if (key in highlightedHexes) { // ตรวจสอบเงินของผู้เล่นที่กำลังเล่นเทิร์นว่าพอจะซื้อช่องหรือเปล่า
+    if (isBuyingHex) {
+      if (key in highlightedHexes) {
         const currentGold = currentTurn === "blue" ? goldBlue : goldRed;
         if (currentGold >= 500) {
-          setSelectedHexes(prev => ({
+          setSelectedHexes((prev) => ({
             ...prev,
             [key]: getColor(currentTurn),
           }));
           setIsBuyingHex(false);
           setHasBoughtHex(true);
           setHighlightedHexes({});
-          // หักเงินของผู้เล่นที่กำลังเล่นเทิร์น
           if (currentTurn === "blue") {
-            setGoldBlue(prevGold => prevGold - 500);
+            setGoldBlue((prevGold) => prevGold - 500);
           } else {
-            setGoldRed(prevGold => prevGold - 500);
+            setGoldRed((prevGold) => prevGold - 500);
           }
         } else {
           alert("คุณมีเงินไม่เพียงพอ!");
@@ -166,7 +226,7 @@ const HexGrid: React.FC<HexGridProps> = ({
       }
       return;
     }
-
+  
     // หากคลิกที่ Hex ของตัวเองและมีมินเนี่ยนที่เลือกอยู่
     const isPlayerHex = selectedHexes[key] === getColor(currentTurn);
   
@@ -175,96 +235,40 @@ const HexGrid: React.FC<HexGridProps> = ({
         alert("คุณสามารถลงมินเนียนได้เพียง 1 ตัวต่อเทิร์น!");
         return;
       }
-      const newMinion = {
-        ...selectedMinion,
-        owner: currentTurn,
-        atk: 5,
-        def: 5,
-        hp: 100
-      };
-      setMinionPositions(prev => ({
-        ...prev,
-        [key]: newMinion,
-      }));
-  
-      // ตรวจสอบเงินของผู้เล่นที่กำลังเล่นเทิร์น
-      const minion = minions.find(m => m.id === selectedMinion.id);
-      if (minion) {
-        const currentGold = currentTurn === "blue" ? goldBlue : goldRed;
-        if (currentGold >= minion.price) {
-          // หักเงินของผู้เล่นที่กำลังเล่นเทิร์น
-          if (currentTurn === "blue") {
-            setGoldBlue(prevGold => prevGold - minion.price);
-          } else {
-            setGoldRed(prevGold => prevGold - minion.price);
-          }
-          alert(`Spawned ${selectedMinion.name} at ${key}`);
-          setSelectedMinion(null); // รีเซ็ตมินเนียนที่เลือก
-        } else {
-          alert("คุณมีเงินไม่เพียงพอ!");
-          return;
-        }
-      }
-  
-      setHasPlacedMinion(true);
+      handlePlaceMinion(key); // เรียกใช้ handlePlaceMinion เพื่อวางมินเนี่ยน
       return;
     }
   
-    if (minionPositions[key]) { // หากคลิกที่มินเนี่ยนที่มีอยู่แล้ว
+    if (minionPositions[key]) {
       setSelectedMinionInfo(minionPositions[key]);
     }
   };
 
-  const moveMinions = () => {
-    const newMinionPositions = { ...minionPositions }; //ลอกข้อมูลจาก minionPositions
-    const minionKeys = Object.keys(newMinionPositions).filter(key => newMinionPositions[key].owner === currentTurn); //เช็ค minnion ของคนที่กำลังเล่นอยู่
+  const updateMinionPositions = (newPositions: Record<string, Minion>) => {
+    const updatedPositions: Record<string, Minion> = {};
   
-    minionKeys.forEach(key => { //loop เดินมินเนียนแต่ละตัว
-      const minion = newMinionPositions[key];
+    Object.entries(newPositions).forEach(([key, minion]) => {
       const match = key.match(/\((\d+),(\d+)\)/); // แยกแถว (row) และคอลัมน์ (col) จาก key
-      if (!match) return;  // ถ้าไม่ตรงกับ key ให้ออกจากลูป
+      if (!match) return;
   
       const [_, rowStr, colStr] = match;
-      const row = parseInt(rowStr, 10); //แปลง row เป็นเลข
-      const col = parseInt(colStr, 10); //แปลง col เป็นเลข
+      const row = parseInt(rowStr, 10); // แปลง row เป็นเลข
+      const col = parseInt(colStr, 10); // แปลง col เป็นเลข
   
-      // กำหนดทิศทางที่มินเนี่ยนสามารถเคลื่อนที่ได้
-      const directions = col % 2 === 0
-      //colum คู่
-        ? [[-1, 0], //บน
-          [-1, 1], //ขวาบน
-          [0, 1], //ขวาล่าง
-          [1, 0], //ล่าง
-          [0, -1], //ซ้ายบน
-          [-1, -1]] //ซ้ายล่าง
-      //colum คี่
-        : [[-1, 0], //บน
-          [0, 1], //ขวาขวา
-          [1, 1], //ขวาล่าง
-          [1, 0], //ล่าง
-          [1, -1], //ซ้ายบน
-          [0, -1]]; //ซ้ายล่าง
-  
-      // สุ่มเลือกทิศทางจากทิศทางที่เป็นไปได้ (ถ้าจะแก้ทิศทางเดินให้แก้ตรงนี้กับข้างบน) ไม่ก็ทำเช็คเคสดู
-      const [dr, dc] = directions[Math.floor(Math.random() * directions.length)]; // เลือกทิศแบบสุ่ม
-       // คำนวณตำแหน่งใหม่จากทิศทางที่สุ่มได้
-      const newRow = row + dr;
-      const newCol = col + dc;
-      const newKey = `(${newRow},${newCol})`; //สร้าง key ใหม่
-      
-      //เช็คว่าตำแหน่งใหม่จะเดินได้
-      if (
-        newRow > 0 && newRow <= ROWS &&
-        newCol > 0 && newCol <= COLS &&
-        !newMinionPositions[newKey] // ตรวจสอบว่าไม่มีมินเนี่ยนอื่นอยู่
-      ) {
-        delete newMinionPositions[key]; // ลบมินเนี่ยนออกจากตำแหน่งเดิม
-        newMinionPositions[newKey] = minion; // ย้ายมินเนี่ยนไปตำแหน่งใหม่
+      // ตรวจสอบว่าตำแหน่งใหม่อยู่ในขอบเขตของกระดาน
+      if (row > 0 && row <= ROWS && col > 0 && col <= COLS) {
+        updatedPositions[key] = {
+          ...minion,
+          row, // อัปเดต row
+          col, // อัปเดต col
+        };
       }
     });
-    // อัปเดตตำแหน่งมินเนี่ยนทั้งหมด
-    setMinionPositions(newMinionPositions);
+  
+    // อัปเดตตำแหน่งของมินเนี่ยนทั้งหมด
+    setMinionPositions(updatedPositions);
   };
+
 
   const handleEndTurn = () => {   // ฟังก์ชันสิ้นสุดเทิร์น
     setCurrentTurn(prev => (prev === "blue" ? "red" : "blue")); // สลับเทิร์นระหว่าง Blue และ Red
@@ -274,7 +278,7 @@ const HexGrid: React.FC<HexGridProps> = ({
     setHasPlacedMinion(false); // รีเซ็ตสถานะการวางมินเนี่ยน
     setHasBoughtHex(false); // รีเซ็ตสถานะการซื้อ Hex
     setHighlightedHexes({}); // รีเซ็ต Hex ที่สามารถซื้อได้
-    moveMinions(); // เดินมินเนี่ยนตอนจบเทิร์น
+    updateMinionPositions; // เดินมินเนี่ยนตอนจบเทิร์น
   };
 
   const handleCloseStatus = () => {   // ฟังก์ชันปิดหน้าต่างสถานะมินเนี่ยน
@@ -494,10 +498,11 @@ const HexGrid: React.FC<HexGridProps> = ({
             X
           </button>
           <p style={{ fontWeight: "bold" }}>Minion status</p>
+          <p>ID: {selectedMinionInfo.id}</p>
           <p>Owner: {selectedMinionInfo.owner}</p>
           <p>HP: {selectedMinionInfo.hp}</p>
-          <p>ATK: {selectedMinionInfo.atk}</p>
           <p>DEF: {selectedMinionInfo.def}</p>
+          <p>Position: ({selectedMinionInfo.row}, {selectedMinionInfo.col})</p>
         </div>
       )}
     </div>
