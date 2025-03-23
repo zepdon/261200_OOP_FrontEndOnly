@@ -58,6 +58,8 @@ const HexGrid: React.FC<HexGridProps> = ({
   const [hasBoughtHex, setHasBoughtHex] = useState(false); // ใช้บอกว่า ผู้เล่นซื้อ Hex ในรอบนี้แล้วหรือยัง
   const [selectedMinionInfo, setSelectedMinionInfo] = useState<Minion | null>(null); //ใช้เก็บ Status ของมินเนี่ยน
   const [nextMinionId, setNextMinionId] = useState(1); // เริ่มต้นที่ 1
+  const [maxspawnblue, setmaxspawnblue] = useState(15);
+  const [maxspawnred, setmaxspawnred] = useState(15);
 
   const minions: Minion[] = [
     {
@@ -137,8 +139,10 @@ const HexGrid: React.FC<HexGridProps> = ({
         // หักเงิน
         if (currentTurn === "blue") {
           setGoldBlue((prev) => prev - selectedMinion.price);
+          setmaxspawnblue((prev) => prev - 1);
         } else {
           setGoldRed((prev) => prev - selectedMinion.price);
+          setmaxspawnred((prev) => prev - 1);
         }
   
         // แยก row และ col จาก hexKey
@@ -367,7 +371,7 @@ const HexGrid: React.FC<HexGridProps> = ({
     }
   }
 
-  const [mode] = useState<number>(3);
+  const [mode] = useState<number>(1);
 
   return (
     <div style={{ position: "relative" }}>
@@ -380,19 +384,32 @@ const HexGrid: React.FC<HexGridProps> = ({
           width={100}
           height={100}
         />
-        <button
+        <div>
+          <h1 style={{ margin: 0 }}>Player1</h1>
+          <br />
+          <h4 style={{ margin: 0 }}>Spawn Remeaning: {maxspawnblue}</h4>
+        </div>
+      </div>
+
+      <button
           style={{ 
             position: "fixed", 
             top: '15%', 
             right: '10%',
             borderRadius: "8px",
             fontSize: "1.5rem",
-            cursor: mode === 2 && currentTurn === "red" || mode === 3 ? "not-allowed" : "pointer"
+            cursor: 
+            mode === 2 && currentTurn === "red" || 
+            mode === 3 ||
+            currentTurn === "blue" && maxspawnblue === 0 ||
+            currentTurn === "red" && maxspawnred === 0 ? "not-allowed" : "pointer"
           }}
           onClick={() => setIsPopupOpen(true)}
           disabled={
             mode === 2 && currentTurn === "red" || // ถ้า mode เท่ากับ 2 และเป็นเทิร์นฝั่งสีแดง
-            mode === 3 // ถ้า mode เท่ากับ 3
+            mode === 3 || // ถ้า mode เท่ากับ 3 
+            currentTurn === "blue" && maxspawnblue === 0 ||
+            currentTurn === "red" && maxspawnred === 0
           }
         >
           Buy Minion
@@ -404,12 +421,14 @@ const HexGrid: React.FC<HexGridProps> = ({
           gold={currentTurn === "blue" ? goldBlue : goldRed} // ส่งเงินของผู้เล่นที่กำลังเล่นเทิร์น
         />
         )}
-        <h1>Player1</h1>
-      </div>
 
       {/* UI Player 2 */}
       <div style={{ position: 'fixed', bottom: '5%', right: '3%', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <h1>Player2</h1>
+        <div>
+          <h1 style={{ margin: 0 }}>Player2</h1>
+          <br />
+          <h4 style={{ margin: 0 }}>Spawn Remeaning: {maxspawnred}</h4>
+        </div>
         <Image
           src="/image/profile/profile.png"
           alt="Profile Image"
