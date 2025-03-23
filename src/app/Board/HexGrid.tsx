@@ -27,6 +27,14 @@ interface Minion {
   row: number; // Current row position
   col: number; // Current column position
 }
+interface minionupdate{
+  row: number;
+  col: number;
+  typeNumber: number;
+  hp:number;
+  defenceFactor:number;
+  src:string;
+}
 
 const HexGrid: React.FC<HexGridProps> = ({
   canAct,
@@ -76,6 +84,11 @@ const HexGrid: React.FC<HexGridProps> = ({
       col: -1,
     },
   ];
+  const [minionupdate, setMinionupdate] = useState<minionupdate[]>([
+    { row: 7, col: 8, typeNumber: 2, hp: 100, defenceFactor: 2, src: "/image/Minion/minion1.png" },
+    { row: 7, col: 7, typeNumber: 2, hp: 100, defenceFactor: 2, src: "/image/Minion/minion2.png" },
+    { row: 1, col: 2, typeNumber: 2, hp: 100, defenceFactor: 2, src: "/image/Minion/minion3.png" }
+  ]);
 
   //ใช้กดเลือกซื้อมินเนียนในหน้า Shop แต่ยังไม่หักเงิน
   const handleBuyMinion = (minionId: number) => {
@@ -91,6 +104,28 @@ const HexGrid: React.FC<HexGridProps> = ({
         alert("คุณมีเงินไม่เพียงพอ!");
       }
     }
+  };
+
+  const updateMinionPositionsFromMinionUpdate = () => {
+    const updatedPositions: Record<string, Minion> = {};
+  
+    minionupdate.forEach((minion) => {
+      const key = `(${minion.row},${minion.col})`;
+      updatedPositions[key] = {
+        id: minion.typeNumber, // ใช้ typeNumber เป็น id
+        name: `Minion ${minion.typeNumber}`,
+        price: 1000, // กำหนดค่า price ตามต้องการ
+        hp: minion.hp,
+        def: minion.defenceFactor,
+        owner: currentTurn, // ใช้ currentTurn เป็น owner
+        src: minion.src,
+        row: minion.row,
+        col: minion.col,
+      };
+    });
+  
+    // อัปเดต minionPositions
+    setMinionPositions(updatedPositions);
   };
 
   //ใช้สำหรับวางมินเนียนเมื่อกดเลือกมินเนียนจาก shop แล้วจะหักเงินเมื่อวางลงช่อง
@@ -239,35 +274,35 @@ const HexGrid: React.FC<HexGridProps> = ({
       return;
     }
   
-    if (minionPositions[key]) {
-      setSelectedMinionInfo(minionPositions[key]);
-    }
+     if (minionPositions[key]) {
+       setSelectedMinionInfo(minionPositions[key]);
+     }
   };
 
-  const updateMinionPositions = (newPositions: Record<string, Minion>) => {
-    const updatedPositions: Record<string, Minion> = {};
+  // const updateMinionPositions = (newPositions: Record<string, Minion>) => {
+  //   const updatedPositions: Record<string, Minion> = {};
   
-    Object.entries(newPositions).forEach(([key, minion]) => {
-      const match = key.match(/\((\d+),(\d+)\)/); // แยกแถว (row) และคอลัมน์ (col) จาก key
-      if (!match) return;
+  //   Object.entries(newPositions).forEach(([key, minion]) => {
+  //     const match = key.match(/\((\d+),(\d+)\)/); // แยกแถว (row) และคอลัมน์ (col) จาก key
+  //     if (!match) return;
   
-      const [_, rowStr, colStr] = match;
-      const row = parseInt(rowStr, 10); // แปลง row เป็นเลข
-      const col = parseInt(colStr, 10); // แปลง col เป็นเลข
+  //     const [_, rowStr, colStr] = match;
+  //     const row = parseInt(rowStr, 10); // แปลง row เป็นเลข
+  //     const col = parseInt(colStr, 10); // แปลง col เป็นเลข
   
-      // ตรวจสอบว่าตำแหน่งใหม่อยู่ในขอบเขตของกระดาน
-      if (row > 0 && row <= ROWS && col > 0 && col <= COLS) {
-        updatedPositions[key] = {
-          ...minion,
-          row, // อัปเดต row
-          col, // อัปเดต col
-        };
-      }
-    });
+  //     // ตรวจสอบว่าตำแหน่งใหม่อยู่ในขอบเขตของกระดาน
+  //     if (row > 0 && row <= ROWS && col > 0 && col <= COLS) {
+  //       updatedPositions[key] = {
+  //         ...minion,
+  //         row, // อัปเดต row
+  //         col, // อัปเดต col
+  //       };
+  //     }
+  //   });
   
-    // อัปเดตตำแหน่งของมินเนี่ยนทั้งหมด
-    setMinionPositions(updatedPositions);
-  };
+  //   // อัปเดตตำแหน่งของมินเนี่ยนทั้งหมด
+  //   setMinionPositions(updatedPositions);
+  // };
 
 
   const handleEndTurn = () => {   // ฟังก์ชันสิ้นสุดเทิร์น
@@ -278,7 +313,8 @@ const HexGrid: React.FC<HexGridProps> = ({
     setHasPlacedMinion(false); // รีเซ็ตสถานะการวางมินเนี่ยน
     setHasBoughtHex(false); // รีเซ็ตสถานะการซื้อ Hex
     setHighlightedHexes({}); // รีเซ็ต Hex ที่สามารถซื้อได้
-    updateMinionPositions; // เดินมินเนี่ยนตอนจบเทิร์น
+    updateMinionPositionsFromMinionUpdate();
+    //updateMinionPositions; // เดินมินเนี่ยนตอนจบเทิร์น
   };
 
   const handleCloseStatus = () => {   // ฟังก์ชันปิดหน้าต่างสถานะมินเนี่ยน
@@ -427,10 +463,10 @@ const HexGrid: React.FC<HexGridProps> = ({
     color: "black",
     border: "none",
     borderRadius: "8px",
-    cursor: turnCount >= 3 || hasPlacedMinion ? "pointer" : "not-allowed", 
+    //cursor: turnCount >= 3 || hasPlacedMinion ? "pointer" : "not-allowed", 
   }}
   onClick={handleEndTurn}
-  disabled={turnCount < 3 ? !hasPlacedMinion : false} 
+  //disabled={turnCount < 3 ? !hasPlacedMinion : false} 
 >
   Done
 </button>
