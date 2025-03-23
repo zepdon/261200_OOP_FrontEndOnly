@@ -57,6 +57,10 @@ requestPlayerHexes() {
       destination: "/app/board/request-minion-type", 
       body: JSON.stringify({}),
     });
+    this.client.publish({
+      destination: "/app/board/request-all-minion-name",
+      body: JSON.stringify({}),
+    });
   } else {
     console.warn("WebSocket is not connected. Cannot request player hexes.");
   }
@@ -71,7 +75,8 @@ requestPlayerHexes() {
     handlePlayer1Budget: (budget: number) =>void,
     handlePlayer2Budget: (budget: number) => void,
     handleCurrentTurn: (turn: number) => void,
-    handleMinionType: (minionType: number) => void
+    handleMinionType: (minionType: number) => void,
+    handleMinionName: (minionName: string[]) => void
   ) {
     this.client.onConnect = () => {
       console.log("Connected to WebSocket");
@@ -109,6 +114,10 @@ requestPlayerHexes() {
         this.client.subscribe("/topic/minion-type", (message) => {
         const minionType = JSON.parse(message.body) as number;
         handleMinionType(minionType);
+        });
+        this.client.subscribe("/topic/all-minion-name", (message) => {
+        const allMinions = JSON.parse(message.body) as string[];
+        handleMinionName(allMinions);
         });
       // Request player-owned hexes after connection is established
       this.requestPlayerHexes();

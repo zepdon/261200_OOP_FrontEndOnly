@@ -26,9 +26,14 @@ interface BoardUpdate {
 
 interface Minion {
   id: number;
-  src: string;
   name: string;
   price: number;
+  hp: number;
+  def: number;
+  owner: "blue" | "red";
+  src: string; // Path to the minion image
+  row: number; // Current row position
+  col: number; // Current column position
 }
 
 type Player = "blue" | "red";
@@ -76,14 +81,29 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
   const [showCount,setshowCount] = useState<number>(0);
 
   // Minions data
-  const minions: Minion[] = [
-    { id: 1, src: "/image/Minion/minion1.png", name: "Minion 1", price: 1000 },
-    { id: 2, src: "/image/Minion/minion2.png", name: "Minion 2", price: 1000 },
-    { id: 3, src: "/image/Minion/minion3.png", name: "Minion 3", price: 1000 },
-    { id: 4, src: "/image/Minion/minion4.png", name: "Minion 4", price: 1000 },
-    { id: 5, src: "/image/Minion/minion5.png", name: "Minion 5", price: 1000 },
-  ];
-
+  const [minions, setMinions] = useState<Minion[]>([
+    {
+      id: 1, name: "Minion 1", price: 1000, hp: 100, def: 5, owner: "blue", src: "/image/Minion/minion1.png",
+      row: -1, col: -1,
+    },
+    {
+      id: 2, name: "Minion 2", price: 1000, hp: 100, def: 6, owner: "blue", src: "/image/Minion/minion2.png",
+      row: -1, col: -1,
+    },
+    {
+      id: 3, name: "Minion 3", price: 1000, hp: 100, def: 4, owner: "blue", src: "/image/Minion/minion3.png",
+      row: -1, col: -1,
+    },
+    {
+      id: 4, name: "Minion 4", price: 1000, hp: 100, def: 5, owner: "blue", src: "/image/Minion/minion4.png",
+      row: -1, col: -1,
+    },
+    {
+      id: 5, name: "Minion 5", price: 1000, hp: 100, def: 7, owner: "blue", src: "/image/Minion/minion5.png",
+      row: -1, col: -1,
+    },
+  ]);
+  
   // Function to update the current turn
   const updateTurn = () => {
     setCurrentTurn(turnCount % 2 === 1 ? "blue" : "red");
@@ -169,6 +189,16 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       setshowCount(type); // Update minions count
     };
 
+    const handleMinionName = (allminion: string[]) => {
+      console.log("Received minion name:", allminion);
+      setMinions((prevMinions) =>
+        prevMinions.map((minion, index) => ({
+          ...minion,
+          name: allminion[index] || minion.name, // Use the new name if available, otherwise keep the old name
+        }))
+      );
+    };
+
     // Request player-owned hexes and budgets when the component mounts
     webSocketService.requestPlayerHexes();
 
@@ -180,7 +210,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       handlePlayer1Budget,
       handlePlayer2Budget,
       handleCurrentTurn,
-      handleMinionType
+      handleMinionType,
+      handleMinionName
     );
 
     // Cleanup on unmount
@@ -203,6 +234,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           return;
         }
         alert(`Spawned ${selectedMinion.name} at ${hexKey}`);
+        console.log("use handlePlaceMinion function");
         setSelectedMinion(null); // Reset selected minion
       }
     }
@@ -457,6 +489,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
             onBuy={handleBuyMinion}
             gold={currentTurn === "blue" ? goldBlue : goldRed} // Send current player's gold
             showCount={showCount}
+            minions={minions} // Pass the minions array with updated names
           />
         )}
         <h1>Player1</h1>

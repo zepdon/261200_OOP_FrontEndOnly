@@ -16,10 +16,11 @@ interface BuyMinionProps {
   onClose: () => void;
   onBuy: (minionId: number) => void;
   gold: number;
-  showCount: number; // Add showCount as a prop
+  showCount: number;
+  minions: { id: number; src: string; name: string; price: number }[]; // Add minions as a prop
 }
 
-const BuyMinion: React.FC<BuyMinionProps> = ({ onClose, onBuy, gold, showCount }) => {
+const BuyMinion: React.FC<BuyMinionProps> = ({ onClose, onBuy, gold, showCount, minions }) => {
   // Use showCount to determine the number of minions to display
   const displayedMinions = minions.slice(0, showCount);
 
