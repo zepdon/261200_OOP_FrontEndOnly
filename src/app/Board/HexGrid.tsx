@@ -88,6 +88,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
     col: number;
   } | null>(null);
   const [showCount,setshowCount] = useState<number>(0);
+  const [mode,setMode] = useState<number>(3);
 
   // Minions data
   const [minions, setMinions] = useState<Minion[]>([
@@ -246,7 +247,6 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
     };
     const handleMinionData = (minionData: string[][]) => {
       
-  
       // Convert the data into the minionupdate format
       const updatedMinions: minionupdate[] = minionData.map((minion) => ({
         row: parseInt(minion[0], 10), // Convert row to number
@@ -261,6 +261,10 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       // Update the minionupdate state
       setMinionupdate(updatedMinions);
       
+    };
+    const handleGameMode = (gameMode: number) => {
+      console.log("Received game mode:", gameMode);
+      setMode(gameMode); // Update game mode
     };
 
     // Request player-owned hexes and budgets when the component mounts
@@ -277,7 +281,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       handleMinionType,
       handleMinionName,
       handleMinionDefence,
-      handleMinionData
+      handleMinionData,
+      handleGameMode
     );
 
     // Cleanup on unmount
@@ -540,11 +545,23 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           width={100}
           height={100}
         />
-        <div style={{ position: "fixed", top: '15%', right: '10%' }}>
-          <div className={styles.button} onClick={() => setIsPopupOpen(true)}>
-            Buy Minion
-          </div>
-        </div>
+         <button
+           style={{ 
+             position: "fixed", 
+             top: '15%', 
+             right: '10%',
+             borderRadius: "8px",
+             fontSize: "1.5rem",
+             cursor: mode === 2 && currentTurn === "red" || mode === 3 ? "not-allowed" : "pointer"
+           }}
+           onClick={() => setIsPopupOpen(true)}
+           disabled={
+             mode === 2 && currentTurn === "red" || // ถ้า mode เท่ากับ 2 และเป็นเทิร์นฝั่งสีแดง
+             mode === 3 // ถ้า mode เท่ากับ 3
+           }
+         >
+           Buy Minion
+         </button>
         {isPopupOpen && (
           <BuyMinion
             onClose={() => setIsPopupOpen(false)}
@@ -591,19 +608,33 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           left: "6%",
           fontSize: "1.5rem",
           fontWeight: "bold",
-          backgroundColor: turnCount >= 3 && !hasBoughtHex ? "white" : "gray",
+          backgroundColor:
+          (mode === 1 && (turnCount < 3 || hasBoughtHex)) || // Mode 1: Turns 1-2 or hasBoughtHex
+          (mode === 2 && (turnCount < 3 || currentTurn === "red" || hasBoughtHex)) || // Mode 2: Turns 1-2, Red's turn, or hasBoughtHex
+          (mode === 3) // Mode 3: Always disabled
+            ? "gray" // Disabled
+            : "white", // Enabled
           color: "black",
           border: "none",
           borderRadius: "8px",
-          cursor: turnCount >= 3 && !hasBoughtHex ? "pointer" : "not-allowed",
+          cursor:
+          (mode === 1 && (turnCount < 3 || hasBoughtHex)) || // Mode 1: Turns 1-2 or hasBoughtHex
+          (mode === 2 && (turnCount < 3 || currentTurn === "red" || hasBoughtHex)) || // Mode 2: Turns 1-2, Red's turn, or hasBoughtHex
+          (mode === 3) // Mode 3: Always disabled
+            ? "not-allowed" 
+            : "pointer",
         }}
         onClick={() => {
-          if (turnCount >= 3) {
+          if (turnCount >= 3 && !hasBoughtHex) { // Ensure the button is only clickable when conditions are met
             setIsBuyingHex(true);
-            highlightedHexes;
+            setHighlightedHexes({}); // Ensure the state updates correctly
           }
         }}
-        disabled={turnCount < 3 || hasBoughtHex}
+        disabled={
+          (mode === 1 && (turnCount < 3 || hasBoughtHex)) || // Mode 1: Turns 1-2 or hasBoughtHex
+          (mode === 2 && (turnCount < 3 || currentTurn === "red" || hasBoughtHex)) || // Mode 2: Turns 1-2, Red's turn, or hasBoughtHex
+          (mode === 3) // Mode 3: Always disabled
+        }
       >
         Buy Hex
       </button>
@@ -614,14 +645,25 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           left: "6%",
           fontSize: "1.5rem",
           fontWeight: "bold",
-          backgroundColor: turnCount >= 3 || hasPlacedMinion ? "white" : "gray",
+          backgroundColor: 
+          mode === 1 && turnCount < 3 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
+          mode === 2 && turnCount < 2 && !hasPlacedMinion    // ถ้าเงื่อนไขเป็นจริง
+          ? "gray" // ตั้งค่า background เป็นสีเทา
+          : "white", // ตั้งค่า background เป็นสีขาว
           color: "black",
           border: "none",
           borderRadius: "8px",
-          cursor: turnCount >= 3 || hasPlacedMinion ? "pointer" : "not-allowed",
+          cursor:
+          mode === 1 && turnCount < 3 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
+          mode === 2 && turnCount < 2 && !hasPlacedMinion    // ถ้าเงื่อนไขเป็นจริง
+            ? "not-allowed" // ตั้งค่า cursor เป็น "not-allowed"
+            : "pointer", // ตั้งค่า cursor เป็น "pointer"
         }}
         onClick={handleEndTurn}
-        disabled={turnCount < 3 ? !hasPlacedMinion : false}
+        disabled={
+          mode === 1 && turnCount < 3 ? !hasPlacedMinion : false ||
+          mode === 2 && turnCount < 2 ? !hasPlacedMinion : false
+          }
       >
         Done
       </button>

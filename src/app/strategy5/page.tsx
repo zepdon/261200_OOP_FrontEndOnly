@@ -112,7 +112,7 @@ export default function StrategyPage() {
         </div>
       </button>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setErrorMessage("")}}>
         <div className={styles.modalContent}>
           <p>{errorMessage}</p>
         </div>
