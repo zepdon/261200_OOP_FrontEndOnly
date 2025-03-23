@@ -61,6 +61,10 @@ requestPlayerHexes() {
       destination: "/app/board/request-all-minion-name",
       body: JSON.stringify({}),
     });
+    this.client.publish({
+      destination: "/app/board/request-all-minion-defence",
+      body: JSON.stringify({}),
+    });
   } else {
     console.warn("WebSocket is not connected. Cannot request player hexes.");
   }
@@ -76,7 +80,8 @@ requestPlayerHexes() {
     handlePlayer2Budget: (budget: number) => void,
     handleCurrentTurn: (turn: number) => void,
     handleMinionType: (minionType: number) => void,
-    handleMinionName: (minionName: string[]) => void
+    handleMinionName: (minionName: string[]) => void,
+    handleMinionDefence: (minionDefence: number[]) => void
   ) {
     this.client.onConnect = () => {
       console.log("Connected to WebSocket");
@@ -98,15 +103,17 @@ requestPlayerHexes() {
         const hexes = JSON.parse(message.body) as string[];
         onPlayer2Hexes(hexes);
       });
-        // Subscribe to player budgets
+        // Subscribe to player budgets1
         this.client.subscribe("/topic/player1-budget", (message) => {
           const budget = JSON.parse(message.body) as number;
           handlePlayer1Budget(budget);
         });
+        // Subscribe to player budgets2
         this.client.subscribe("/topic/player2-budget", (message) => {
           const budget = JSON.parse(message.body) as number;
           handlePlayer2Budget(budget);
         });
+        // Subscribe to current turn
         this.client.subscribe("/topic/current-turn", (message) => {
         const turn = JSON.parse(message.body) as number;
         handleCurrentTurn(turn);
@@ -118,6 +125,10 @@ requestPlayerHexes() {
         this.client.subscribe("/topic/all-minion-name", (message) => {
         const allMinions = JSON.parse(message.body) as string[];
         handleMinionName(allMinions);
+        });
+        this.client.subscribe("/topic/minion-defence", (message) => {
+        const minionDefence = JSON.parse(message.body) as number[];
+        handleMinionDefence(minionDefence);
         });
       // Request player-owned hexes after connection is established
       this.requestPlayerHexes();

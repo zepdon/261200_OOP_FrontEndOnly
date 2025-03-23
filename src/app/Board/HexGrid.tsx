@@ -35,6 +35,15 @@ interface Minion {
   row: number; // Current row position
   col: number; // Current column position
 }
+interface minionupdate{
+  row: number;
+  col: number;
+  typeNumber: number;
+  hp:number;
+  defenceFactor:number;
+  src:string;
+  owner: "blue" | "red";
+}
 
 type Player = "blue" | "red";
 
@@ -103,6 +112,32 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       row: -1, col: -1,
     },
   ]);
+  // const [minionupdate, setMinionupdate] = useState<minionupdate[]>([
+  //   { row: 7, col: 8, typeNumber: 1, hp: 100, defenceFactor: 2, src: "/image/Minion/minion1.png" ,owner: "blue"},
+  //   { row: 7, col: 7, typeNumber: 2, hp: 50, defenceFactor: 2, src: "/image/Minion/minion2.png", owner:"red"},
+  //   { row: 1, col: 2, typeNumber: 2, hp: 100, defenceFactor: 2, src: "/image/Minion/minion3.png" ,owner:"red"}
+  // ]);
+  // const updateMinionPositionsFromMinionUpdate = () => {
+  //   const updatedPositions: Record<string, Minion> = {};
+  
+  //   minionupdate.forEach((minion) => {
+  //     const key = `(${minion.row},${minion.col})`;
+  //     updatedPositions[key] = {
+  //       id: minion.typeNumber, // ใช้ typeNumber เป็น id
+  //       name: `Minion ${minion.typeNumber}`,
+  //       price: 1000, // กำหนดค่า price ตามต้องการ
+  //       hp: minion.hp,
+  //       def: minion.defenceFactor,
+  //       owner: minion.owner, // ใช้ currentTurn เป็น owner
+  //       src: minion.src,
+  //       row: minion.row,
+  //       col: minion.col,
+  //     };
+  //   });
+  
+  //   // อัปเดต minionPositions
+  //   setMinionPositions(updatedPositions);
+  // };
   
   // Function to update the current turn
   const updateTurn = () => {
@@ -198,6 +233,17 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
         }))
       );
     };
+    const handleMinionDefence = (MinionDefence: number[]) => {
+      console.log("Received minion Defence:", MinionDefence);
+    
+      // Update the minions state with the new defense values
+      setMinions((prevMinions) =>
+        prevMinions.map((minion, index) => ({
+          ...minion,
+          def: MinionDefence[index] || minion.def, // Use the new defense value if available, otherwise keep the old value
+        }))
+      );
+    };
 
     // Request player-owned hexes and budgets when the component mounts
     webSocketService.requestPlayerHexes();
@@ -211,7 +257,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       handlePlayer2Budget,
       handleCurrentTurn,
       handleMinionType,
-      handleMinionName
+      handleMinionName,
+      handleMinionDefence
     );
 
     // Cleanup on unmount
@@ -346,10 +393,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       }
       const newMinion = {
         ...selectedMinion,
+         // ใช้ nextMinionId เป็น id ของมินเนี่ยนใหม่
         owner: currentTurn,
-        
-        def: 5,
-        hp: 100,
       };
       setMinionPositions((prev) => ({
         ...prev,
@@ -402,6 +447,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
     // Send the turn data to the backend
     webSocketService.publish("/app/board/perform-turn", JSON.stringify(turnData));
     setCurrentTurn(prev => (prev === "blue" ? "red" : "blue"));
+    // updateMinionPositionsFromMinionUpdate();
     
     // Reset states and update the turn
     // webSocketService.publish("/app/board/request-current-turn", JSON.stringify({})); // Request current turn
@@ -623,6 +669,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           <p>Owner: {selectedMinionInfo.owner}</p>
           <p>HP: {selectedMinionInfo.hp}</p>
           <p>DEF: {selectedMinionInfo.def}</p>
+          
         </div>
       )}
     </div>
