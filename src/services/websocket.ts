@@ -73,6 +73,18 @@ requestPlayerHexes() {
       destination: "/app/board/request-GameMode",
       body: JSON.stringify({}),
     });
+    this.client.publish({
+      destination: "/app/board/request-GameResult",
+      body: JSON.stringify({}),
+    });
+    this.client.publish({
+      destination: "/app/board/request-player1-spawnRemaining",
+      body: JSON.stringify({}),
+    });
+    this.client.publish({
+      destination: "/app/board/request-player2-spawnRemaining",
+      body: JSON.stringify({}),
+    });
   } else {
     console.warn("WebSocket is not connected. Cannot request player hexes.");
   }
@@ -91,7 +103,10 @@ requestPlayerHexes() {
     handleMinionName: (minionName: string[]) => void,
     handleMinionDefence: (minionDefence: number[]) => void,
     handleMinionData: (minionData: string[][]) => void,
-    handleGamemode: (gamemode: number) => void
+    handleGamemode: (gamemode: number) => void,
+    handleGameResult: (gameResult: number) => void,
+    handlePlayer1spawnremaining: (remaining: number) => void,
+    handlePlayer2spawnremaining: (remaining: number) => void
   ) {
     this.client.onConnect = () => {
       console.log("Connected to WebSocket");
@@ -147,6 +162,18 @@ requestPlayerHexes() {
         this.client.subscribe("/topic/gameMode", (message) => {
         const gamemode = JSON.parse(message.body) as number;
         handleGamemode(gamemode);
+        });
+        this.client.subscribe("/topic/gameResult", (message) => {
+        const result = JSON.parse(message.body) as number;
+        handleGameResult(result);
+        });
+        this.client.subscribe("/topic/player1-spawnRemaining", (message) => {
+        const remaining = JSON.parse(message.body) as number;
+        handlePlayer1spawnremaining(remaining);
+        });
+        this.client.subscribe("/topic/player2-spawnRemaining", (message) => {
+        const remaining = JSON.parse(message.body) as number;
+        handlePlayer2spawnremaining(remaining);
         });
       // Request player-owned hexes after connection is established
       this.requestPlayerHexes();

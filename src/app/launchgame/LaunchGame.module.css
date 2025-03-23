@@ -6,7 +6,7 @@
     justify-content: center;
     height: 100vh;
     padding: 20px;
-    background-color: #f0f0f0;
+    background-color: #141414;
     font-family: Arial, sans-serif;
   }
   
@@ -14,14 +14,14 @@
   .container h1 {
     font-size: 2.5rem;
     margin-bottom: 20px;
-    color: #333;
+    color: #ffffff;
   }
   
   /* Paragraph styling */
   .container p {
     font-size: 1.2rem;
     margin-bottom: 10px;
-    color: #555;
+    color: #f7f7f7;
   }
   
   /* List styling */
@@ -34,7 +34,7 @@
   .container ul li {
     font-size: 1rem;
     margin-bottom: 5px;
-    color: #333;
+    color: #ffffff;
   }
   
   /* Button styling */

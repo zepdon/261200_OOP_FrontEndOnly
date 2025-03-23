@@ -89,6 +89,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
   } | null>(null);
   const [showCount,setshowCount] = useState<number>(0);
   const [mode,setMode] = useState<number>(3);
+  const [maxspawnblue, setmaxspawnblue] = useState(15);
+  const [maxspawnred, setmaxspawnred] = useState(15);
 
   // Minions data
   const [minions, setMinions] = useState<Minion[]>([
@@ -266,6 +268,24 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       console.log("Received game mode:", gameMode);
       setMode(gameMode); // Update game mode
     };
+    const handleGameResult = (result: number) => {
+      console.log("Received game result:", result);
+      if (result === 1) {
+        alert("Player 1 Wins!"); // Alert if Player 1 wins
+      } else if (result === 2) {
+        alert("Player 2 Wins!"); // Alert if Player 2 wins
+      } else {
+        alert("It's a Draw!"); // Alert if the game is a draw
+      }
+    };
+    const handlePlayer1SpawnRemaining = (remaining: number) => {
+      console.log("Received player 1 spawn remaining:", remaining);
+      setmaxspawnblue(remaining); // Update player 1's spawn remaining
+    };
+    const handlePlayer2SpawnRemaining = (remaining: number) => {
+      console.log("Received player 2 spawn remaining:", remaining);
+      setmaxspawnred(remaining); // Update player 2's spawn remaining
+    };
 
     // Request player-owned hexes and budgets when the component mounts
     webSocketService.requestPlayerHexes();
@@ -282,7 +302,10 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       handleMinionName,
       handleMinionDefence,
       handleMinionData,
-      handleGameMode
+      handleGameMode,
+      handleGameResult,
+      handlePlayer1SpawnRemaining,
+      handlePlayer2SpawnRemaining
     );
 
     // Cleanup on unmount
@@ -545,6 +568,12 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           width={100}
           height={100}
         />
+        <div>
+          <h1 style={{ margin: 0 }}>Player1</h1>
+          <br />
+          <h4 style={{ margin: 0 }}>Spawn Remeaning: {maxspawnblue}</h4>
+        </div>
+        </div>
          <button
            style={{ 
              position: "fixed", 
@@ -552,12 +581,18 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
              right: '10%',
              borderRadius: "8px",
              fontSize: "1.5rem",
-             cursor: mode === 2 && currentTurn === "red" || mode === 3 ? "not-allowed" : "pointer"
+             cursor: 
+             mode === 2 && currentTurn === "red" || 
+             mode === 3 ||
+             currentTurn === "blue" && maxspawnblue === 0 ||
+             currentTurn === "red" && maxspawnred === 0 ? "not-allowed" : "pointer"
            }}
            onClick={() => setIsPopupOpen(true)}
            disabled={
              mode === 2 && currentTurn === "red" || // ถ้า mode เท่ากับ 2 และเป็นเทิร์นฝั่งสีแดง
-             mode === 3 // ถ้า mode เท่ากับ 3
+             mode === 3 || // ถ้า mode เท่ากับ 3 
+             currentTurn === "blue" && maxspawnblue === 0 ||
+             currentTurn === "red" && maxspawnred === 0
            }
          >
            Buy Minion
@@ -571,10 +606,13 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
             minions={minions} // Pass the minions array with updated names
           />
         )}
-        <h1>Player1</h1>
-      </div>
+     
       <div style={{ position: 'fixed', bottom: '5%', right: '3%', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <h1>Player2</h1>
+      <div>
+           <h1 style={{ margin: 0 }}>Player2</h1>
+           <br />
+           <h4 style={{ margin: 0 }}>Spawn Remeaning: {maxspawnred}</h4>
+         </div>
         <Image
           src="/image/profile/profile.png"
           alt="Profile Image"
@@ -646,6 +684,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           fontSize: "1.5rem",
           fontWeight: "bold",
           backgroundColor: 
+          turnCount > 60 ||
           mode === 1 && turnCount < 3 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
           mode === 2 && turnCount < 2 && !hasPlacedMinion    // ถ้าเงื่อนไขเป็นจริง
           ? "gray" // ตั้งค่า background เป็นสีเทา
@@ -654,6 +693,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           border: "none",
           borderRadius: "8px",
           cursor:
+          turnCount > 60 ||
           mode === 1 && turnCount < 3 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
           mode === 2 && turnCount < 2 && !hasPlacedMinion    // ถ้าเงื่อนไขเป็นจริง
             ? "not-allowed" // ตั้งค่า cursor เป็น "not-allowed"
@@ -661,6 +701,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
         }}
         onClick={handleEndTurn}
         disabled={
+          turnCount > 60 ||
           mode === 1 && turnCount < 3 ? !hasPlacedMinion : false ||
           mode === 2 && turnCount < 2 ? !hasPlacedMinion : false
           }
@@ -679,7 +720,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           borderRadius: "8px",
         }}
       >
-        Turn Count: {turnCount}
+        Turn Count: {turnCount} / 60
       </div>
       <div
         style={{
