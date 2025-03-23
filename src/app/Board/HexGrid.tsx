@@ -112,32 +112,32 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       row: -1, col: -1,
     },
   ]);
-  // const [minionupdate, setMinionupdate] = useState<minionupdate[]>([
-  //   { row: 7, col: 8, typeNumber: 1, hp: 100, defenceFactor: 2, src: "/image/Minion/minion1.png" ,owner: "blue"},
-  //   { row: 7, col: 7, typeNumber: 2, hp: 50, defenceFactor: 2, src: "/image/Minion/minion2.png", owner:"red"},
-  //   { row: 1, col: 2, typeNumber: 2, hp: 100, defenceFactor: 2, src: "/image/Minion/minion3.png" ,owner:"red"}
-  // ]);
-  // const updateMinionPositionsFromMinionUpdate = () => {
-  //   const updatedPositions: Record<string, Minion> = {};
+  const [minionupdate, setMinionupdate] = useState<minionupdate[]>([
+    // { row: 7, col: 8, typeNumber: 1, hp: 100, defenceFactor: 2, src: "/image/Minion/minion1.png" ,owner: "blue"},
+    // { row: 7, col: 7, typeNumber: 2, hp: 50, defenceFactor: 2, src: "/image/Minion/minion2.png", owner:"red"},
+    // { row: 1, col: 2, typeNumber: 2, hp: 100, defenceFactor: 2, src: "/image/Minion/minion3.png" ,owner:"red"}
+  ]);
+  const updateMinionPositionsFromMinionUpdate = () => {
+    const updatedPositions: Record<string, Minion> = {};
   
-  //   minionupdate.forEach((minion) => {
-  //     const key = `(${minion.row},${minion.col})`;
-  //     updatedPositions[key] = {
-  //       id: minion.typeNumber, // ใช้ typeNumber เป็น id
-  //       name: `Minion ${minion.typeNumber}`,
-  //       price: 1000, // กำหนดค่า price ตามต้องการ
-  //       hp: minion.hp,
-  //       def: minion.defenceFactor,
-  //       owner: minion.owner, // ใช้ currentTurn เป็น owner
-  //       src: minion.src,
-  //       row: minion.row,
-  //       col: minion.col,
-  //     };
-  //   });
+    minionupdate.forEach((minion) => {
+      const key = `(${minion.row},${minion.col})`;
+      updatedPositions[key] = {
+        id: minion.typeNumber, // ใช้ typeNumber เป็น id
+        name: `Minion ${minion.typeNumber}`,
+        price: 1000, // กำหนดค่า price ตามต้องการ
+        hp: minion.hp,
+        def: minion.defenceFactor,
+        owner: minion.owner, // ใช้ currentTurn เป็น owner
+        src: minion.src,
+        row: minion.row,
+        col: minion.col,
+      };
+    });
   
-  //   // อัปเดต minionPositions
-  //   setMinionPositions(updatedPositions);
-  // };
+    // อัปเดต minionPositions
+    setMinionPositions(updatedPositions);
+  };
   
   // Function to update the current turn
   const updateTurn = () => {
@@ -244,10 +244,28 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
         }))
       );
     };
+    const handleMinionData = (minionData: string[][]) => {
+      
+  
+      // Convert the data into the minionupdate format
+      const updatedMinions: minionupdate[] = minionData.map((minion) => ({
+        row: parseInt(minion[0], 10), // Convert row to number
+        col: parseInt(minion[1], 10), // Convert col to number
+        typeNumber: parseInt(minion[2], 10), // Convert typeNumber to number
+        hp: parseInt(minion[3], 10), // Convert hp to number
+        defenceFactor: parseInt(minion[4], 10), // Convert defenceFactor to number
+        src: minion[5], // src is already a string
+        owner: minion[6] as "blue" | "red", // owner is already a string, but cast to "blue" | "red"
+      }));
+      console.log("Received minion data:",updatedMinions);
+      // Update the minionupdate state
+      setMinionupdate(updatedMinions);
+      
+    };
 
     // Request player-owned hexes and budgets when the component mounts
     webSocketService.requestPlayerHexes();
-
+    
     // Connect to WebSocket and set up subscriptions
     webSocketService.connect(
       handleMessage,
@@ -258,7 +276,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       handleCurrentTurn,
       handleMinionType,
       handleMinionName,
-      handleMinionDefence
+      handleMinionDefence,
+      handleMinionData
     );
 
     // Cleanup on unmount
@@ -434,6 +453,11 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
   };
 
   // Handle ending the turn
+  useEffect(() => {
+    // Update minion positions whenever minionupdate changes
+    updateMinionPositionsFromMinionUpdate();
+  }, [minionupdate]); // Trigger this effect when minionupdate changes
+  
   const handleEndTurn = () => {
     // Gather the necessary data for the turn
     const turnData = {
@@ -447,16 +471,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
     // Send the turn data to the backend
     webSocketService.publish("/app/board/perform-turn", JSON.stringify(turnData));
     setCurrentTurn(prev => (prev === "blue" ? "red" : "blue"));
-    // updateMinionPositionsFromMinionUpdate();
-    
-    // Reset states and update the turn
-    // webSocketService.publish("/app/board/request-current-turn", JSON.stringify({})); // Request current turn
-    // webSocketService.publish("/app/board/request-player1-hexes", JSON.stringify({})); // Request player 1 hexes
-    // webSocketService.publish("/app/board/request-player2-hexes", JSON.stringify({})); // Request player 2 hexes
-    // webSocketService.publish("/app/board/request-player1-budget", JSON.stringify({})); // Request player 1 budget
-    // webSocketService.publish("/app/board/request-player2-budget", JSON.stringify({})); // Request player 2 budget
   
-     // Update the turn locally
+    // Reset states and update the turn
     setLocked(false); // Unlock the board
     setPendingHex(null); // Reset pending hex
     setHasPlacedMinion(false); // Reset minion placement status

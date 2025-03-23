@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import styles from './Strategy.module.css';
 import { useGameConfig } from '../../context/GameConfigContext';
+import Modal from '@/src/components/Modal/Modal';
 
 export default function StrategyPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function StrategyPage() {
   const [defenseFactor, setDefenseFactor] = useState("");
   const [strategyScript, setStrategyScript] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSubmit = async () => {
     setErrorMessage("");
@@ -31,6 +33,7 @@ export default function StrategyPage() {
       if (!response.ok) {
         const errorText = await response.text();
         setErrorMessage(errorText);
+        setIsModalOpen(true);
       } else {
         // If valid, save the minion type in context.
         addMinionType({
@@ -50,6 +53,7 @@ export default function StrategyPage() {
     } catch (error) {
       console.error("Error submitting minion type:", error);
       setErrorMessage("An unexpected error occurred. Please try again.");
+      setIsModalOpen(true);
     }
   };
 
@@ -113,6 +117,12 @@ export default function StrategyPage() {
           <Image src="/image/button/OK.png" alt="OK button" width={135} height={79} />
         </div>
       </button>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <div className={styles.modalContent}>
+          <p>{errorMessage}</p>
+        </div>
+      </Modal>
     </div>
   );
 }
