@@ -91,6 +91,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
   const [mode,setMode] = useState<number>(3);
   const [maxspawnblue, setmaxspawnblue] = useState(15);
   const [maxspawnred, setmaxspawnred] = useState(15);
+  const [gameRunning, setgameRunning] = useState(true);
 
   // Minions data
   const [minions, setMinions] = useState<Minion[]>([
@@ -272,10 +273,13 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       console.log("Received game result:", result);
       if (result === 1) {
         alert("Player 1 Wins!"); // Alert if Player 1 wins
+        setgameRunning(false); //
       } else if (result === 2) {
         alert("Player 2 Wins!"); // Alert if Player 2 wins
+        setgameRunning(false); //
       } else {
         alert("It's a Draw!"); // Alert if the game is a draw
+        setgameRunning(false); //
       }
     };
     const handlePlayer1SpawnRemaining = (remaining: number) => {
@@ -451,6 +455,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       const minion = minions.find((m) => m.id === selectedMinion.id);
       if (minion) {
         const currentGold = currentTurn === "blue" ? goldBlue : goldRed;
+        if(turnCount > 2){
         if (currentGold >= minion.price) {
           if (currentTurn === "blue") {
             setGoldBlue((prevGold) => prevGold - minion.price);
@@ -470,7 +475,16 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           alert("คุณมีเงินไม่เพียงพอ!");
           return;
         }
-      }
+      }else {
+      alert(`Spawned ${selectedMinion.name} at ${key}`);
+      setSelectedMinion(null);
+
+      setindexminiontosent({ 
+        id: selectedMinion.id, 
+        row, 
+        col })
+    }
+    }
       setHasPlacedMinion(true);
       return;
     }
@@ -592,7 +606,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
              mode === 2 && currentTurn === "red" || // ถ้า mode เท่ากับ 2 และเป็นเทิร์นฝั่งสีแดง
              mode === 3 || // ถ้า mode เท่ากับ 3 
              currentTurn === "blue" && maxspawnblue === 0 ||
-             currentTurn === "red" && maxspawnred === 0
+             currentTurn === "red" && maxspawnred === 0 
            }
          >
            Buy Minion
@@ -686,7 +700,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           backgroundColor: 
           turnCount > 60 ||
           mode === 1 && turnCount < 3 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
-          mode === 2 && turnCount < 2 && !hasPlacedMinion    // ถ้าเงื่อนไขเป็นจริง
+          mode === 2 && turnCount < 2 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
+          gameRunning === false
           ? "gray" // ตั้งค่า background เป็นสีเทา
           : "white", // ตั้งค่า background เป็นสีขาว
           color: "black",
@@ -695,7 +710,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           cursor:
           turnCount > 60 ||
           mode === 1 && turnCount < 3 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
-          mode === 2 && turnCount < 2 && !hasPlacedMinion    // ถ้าเงื่อนไขเป็นจริง
+          mode === 2 && turnCount < 2 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
+          gameRunning === false
             ? "not-allowed" // ตั้งค่า cursor เป็น "not-allowed"
             : "pointer", // ตั้งค่า cursor เป็น "pointer"
         }}
@@ -703,7 +719,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
         disabled={
           turnCount > 60 ||
           mode === 1 && turnCount < 3 ? !hasPlacedMinion : false ||
-          mode === 2 && turnCount < 2 ? !hasPlacedMinion : false
+          mode === 2 && turnCount < 2 ? !hasPlacedMinion : false ||
+          gameRunning === false 
           }
       >
         Done
