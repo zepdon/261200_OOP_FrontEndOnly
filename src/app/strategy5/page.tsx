@@ -17,6 +17,34 @@ export default function StrategyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSubmit = async () => {
+    // Validate inputs before submitting
+    if (!minionName.trim()) {
+      setErrorMessage("Please enter a minion name");
+      setIsModalOpen(true);
+      return;
+    }
+
+    if (!defenseFactor.trim()) {
+      setErrorMessage("Please enter a defense factor (DEF)");
+      setIsModalOpen(true);
+      return;
+    }
+
+    // Check if defenseFactor is a valid number
+    const defValue = Number(defenseFactor);
+    if (isNaN(defValue)) {
+      setErrorMessage("Defense factor must be a number");
+      setIsModalOpen(true);
+      return;
+    }
+
+    // Check if defense is 0 or more
+    if (defValue < 0) {
+      setErrorMessage("Defense factor must be 0 or more");
+      setIsModalOpen(true);
+      return;
+    }
+    
     setErrorMessage("");
     const payload = {
       name: minionName,

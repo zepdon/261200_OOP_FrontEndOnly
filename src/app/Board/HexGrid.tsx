@@ -92,6 +92,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
   const [maxspawnblue, setmaxspawnblue] = useState(15);
   const [maxspawnred, setmaxspawnred] = useState(15);
   const [gameRunning, setgameRunning] = useState(true);
+  const [maxturn, setmaxturn] = useState(60);
 
   // Minions data
   const [minions, setMinions] = useState<Minion[]>([
@@ -687,18 +688,18 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           (mode === 2 && (turnCount < 3 || currentTurn === "red" || hasBoughtHex)) || // Mode 2: Turns 1-2, Red's turn, or hasBoughtHex
           (mode === 3) // Mode 3: Always disabled
         }
-      >
+      > $500 <br/>
         Buy Hex
       </button>
       <button
         style={{
           position: "fixed",
-          top: "35%",
+          top: "40%",
           left: "6%",
           fontSize: "1.5rem",
           fontWeight: "bold",
           backgroundColor: 
-          turnCount > 60 ||
+          turnCount > maxturn ||
           mode === 1 && turnCount < 3 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
           mode === 2 && turnCount < 2 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
           gameRunning === false
@@ -708,7 +709,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           border: "none",
           borderRadius: "8px",
           cursor:
-          turnCount > 60 ||
+          turnCount > maxturn ||
           mode === 1 && turnCount < 3 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
           mode === 2 && turnCount < 2 && !hasPlacedMinion || // ถ้าเงื่อนไขเป็นจริง
           gameRunning === false
@@ -717,7 +718,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
         }}
         onClick={handleEndTurn}
         disabled={
-          turnCount > 60 ||
+          turnCount > maxturn ||
           mode === 1 && turnCount < 3 ? !hasPlacedMinion : false ||
           mode === 2 && turnCount < 2 ? !hasPlacedMinion : false ||
           gameRunning === false 
@@ -737,7 +738,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           borderRadius: "8px",
         }}
       >
-        Turn Count: {turnCount} / 60
+        Turn Count: {turnCount} / {maxturn}
       </div>
       <div
         style={{
