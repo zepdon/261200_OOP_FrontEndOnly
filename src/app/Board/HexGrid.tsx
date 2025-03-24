@@ -60,9 +60,7 @@ const getColor = (turn: "blue" | "red") => (turn === "blue" ? "#3498db" : "#e74c
 
 const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
   // State variables
-  const [minionPositions, setMinionPositions] = useState<
-    Record<string, { id: number; src: string; owner: Player;  def: number; hp: number }>
-  >({});
+  const [minionPositions, setMinionPositions] = useState<Record<string, Minion>>({}); //เก็บมินเนี่ยนทั้งหมดบนกระดาน โดยใช้ ตำแหน่ง (row,col) เป็น key
   const [locked, setLocked] = useState(false);
   const [selectedHexes, setSelectedHexes] = useState<Record<string, string>>({});
   const [selectedMinion, setSelectedMinion] = useState<Minion | null>(null);
@@ -76,12 +74,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
   const [highlightedHexes, setHighlightedHexes] = useState<Record<string, string>>({});
   const [hasPlacedMinion, setHasPlacedMinion] = useState(false);
   const [pendingHex, setPendingHex] = useState<string | null>(null);
-  const [selectedMinionInfo, setSelectedMinionInfo] = useState<{
-    id: number;
-    owner: Player;
-    def: number;
-    hp: number;
-  } | null>(null);
+  const [selectedMinionInfo, setSelectedMinionInfo] = useState<
+   Minion | null>(null);
   const [indexminiontosent, setindexminiontosent] = useState<{
     id: number;
     row: number;
@@ -166,24 +160,6 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
   };
 
   useEffect(() => {
-    const handleMessage = (update: BoardUpdate) => {
-      console.log("Received update:", update);
-      const { row, col, player, action, minion } = update;
-      const key = `(${row},${col})`;
-
-      if (action === "placeMinion" && minion) {
-        setMinionPositions((prev) => ({
-          ...prev,
-          [key]: { ...minion, owner: player },
-        }));
-      } else if (action === "buyHex") {
-        setSelectedHexes((prev) => ({
-          ...prev,
-          [key]: player === "blue" ? "#3498db" : "#e74c3c",
-        }));
-      }
-    };
-
     const handlePlayer1Hexes = (hexes: string[]) => {
       console.log("Received player 1 hexes:", hexes);
       setSelectedHexes((prev) => {
@@ -297,7 +273,6 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
     
     // Connect to WebSocket and set up subscriptions
     webSocketService.connect(
-      handleMessage,
       handlePlayer1Hexes,
       handlePlayer2Hexes,
       handlePlayer1Budget,
@@ -341,15 +316,6 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
 
   // Handle buying a hex
   const handleBuyHex = (hexKey: string) => {
-    const [row, col] = hexKey.slice(1, -1).split(",").map(Number);
-    const update: BoardUpdate = {
-      row,
-      col,
-      player: currentTurn,
-      action: "buyHex",
-    };
-    webSocketService.sendUpdate(update);
-
     // Update local state
     setSelectedHexes((prev) => ({
       ...prev,
@@ -421,6 +387,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           setIsBuyingHex(false);
           setHasBoughtHex(true);
           setHighlightedHexes({});
+          setSelectedMinion(null);
           if (currentTurn === "blue") {
             setGoldBlue((prevGold) => prevGold - 500);
           } else {
@@ -442,6 +409,10 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
       if (hasPlacedMinion) {
         alert("คุณสามารถลงมินเนียนได้เพียง 1 ตัวต่อเทิร์น!");
         return;
+      }
+      if (minionPositions[key]) {
+        alert("ช่องนี้มีมินเนียนอยู่");
+        return; // หยุดการทำงานไม่ให้วางมินเนียนซ้ำ
       }
       const newMinion = {
         ...selectedMinion,
@@ -522,6 +493,8 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
     setHasBoughtHex(false); // Reset hex purchase status
     setHighlightedHexes({}); // Reset highlighted hexes
     setindexminiontosent(null); // Reset minion data
+    setIsBuyingHex(false); // เพิ่มบรรทัดนี้เพื่อปิดโหมดซื้อ Hex
+    setSelectedMinion(null);
   };
 
   // Handle closing the minion status popup
@@ -566,7 +539,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
               y={HEX_HEIGHT * -0.2}
               width={HEX_RADIUS * 1.5}
               height={HEX_HEIGHT * 1.5}
-              onClick={() => setSelectedMinionInfo(minion)}
+              pointerEvents="none"
             />
           )}
         </g>
@@ -597,6 +570,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
              borderRadius: "8px",
              fontSize: "1.5rem",
              cursor: 
+             isBuyingHex === true ||
              mode === 2 && currentTurn === "red" || 
              mode === 3 ||
              currentTurn === "blue" && maxspawnblue === 0 ||
@@ -604,6 +578,7 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
            }}
            onClick={() => setIsPopupOpen(true)}
            disabled={
+            isBuyingHex === true ||
              mode === 2 && currentTurn === "red" || // ถ้า mode เท่ากับ 2 และเป็นเทิร์นฝั่งสีแดง
              mode === 3 || // ถ้า mode เท่ากับ 3 
              currentTurn === "blue" && maxspawnblue === 0 ||
@@ -661,32 +636,28 @@ const HexGrid: React.FC<HexGridProps> = ({ canAct }) => {
           left: "6%",
           fontSize: "1.5rem",
           fontWeight: "bold",
-          backgroundColor:
-          (mode === 1 && (turnCount < 3 || hasBoughtHex)) || // Mode 1: Turns 1-2 or hasBoughtHex
-          (mode === 2 && (turnCount < 3 || currentTurn === "red" || hasBoughtHex)) || // Mode 2: Turns 1-2, Red's turn, or hasBoughtHex
-          (mode === 3) // Mode 3: Always disabled
-            ? "gray" // Disabled
-            : "white", // Enabled
           color: "black",
           border: "none",
           borderRadius: "8px",
           cursor:
           (mode === 1 && (turnCount < 3 || hasBoughtHex)) || // Mode 1: Turns 1-2 or hasBoughtHex
           (mode === 2 && (turnCount < 3 || currentTurn === "red" || hasBoughtHex)) || // Mode 2: Turns 1-2, Red's turn, or hasBoughtHex
-          (mode === 3) // Mode 3: Always disabled
+          (mode === 3) || isPopupOpen === true // Mode 3: Always disabled
             ? "not-allowed" 
             : "pointer",
         }}
         onClick={() => {
           if (turnCount >= 3 && !hasBoughtHex) { // Ensure the button is only clickable when conditions are met
             setIsBuyingHex(true);
-            setHighlightedHexes({}); // Ensure the state updates correctly
+            if(isBuyingHex == true){
+              setIsBuyingHex(false); // เพิ่มบรรทัดนี้เพื่อปิดโหมดซื้อ Hex
+              }
           }
         }}
         disabled={
           (mode === 1 && (turnCount < 3 || hasBoughtHex)) || // Mode 1: Turns 1-2 or hasBoughtHex
           (mode === 2 && (turnCount < 3 || currentTurn === "red" || hasBoughtHex)) || // Mode 2: Turns 1-2, Red's turn, or hasBoughtHex
-          (mode === 3) // Mode 3: Always disabled
+          (mode === 3) || isPopupOpen === true // Mode 3: Always disabled
         }
       > $500 <br/>
         Buy Hex

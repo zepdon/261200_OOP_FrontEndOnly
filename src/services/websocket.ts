@@ -93,7 +93,6 @@ requestPlayerHexes() {
    
 
   connect(
-    onMessage: (update: BoardUpdate) => void,
     onPlayer1Hexes: (hexes: string[]) => void,
     onPlayer2Hexes: (hexes: string[]) => void,
     handlePlayer1Budget: (budget: number) =>void,
@@ -110,12 +109,6 @@ requestPlayerHexes() {
   ) {
     this.client.onConnect = () => {
       console.log("Connected to WebSocket");
-  
-      // Subscribe to board updates
-      this.client.subscribe("/topic/board", (message) => {
-        const update = JSON.parse(message.body) as BoardUpdate;
-        onMessage(update);
-      });
   
       // Subscribe to player 1 hexes
       this.client.subscribe("/topic/player1-hexes", (message) => {
@@ -197,12 +190,7 @@ publish(destination: string, body: string) {
     console.warn("WebSocket is not connected. Cannot publish message.");
   }
 }
-  sendUpdate(update: BoardUpdate) {
-    this.client.publish({
-      destination: "/app/board/update",
-      body: JSON.stringify(update),
-    });
-  }
+
   disconnect() {
     this.client.deactivate();
   }
